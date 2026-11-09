@@ -57,7 +57,7 @@ interface VideoCallDockProps {
   followingClientId?: string | null;
   onFollowPeer?: (clientId: string | null) => void;
   localVideoEffect?: VideoEffect;
-  onSetVideoEffect?: (effect: VideoEffect) => void;
+  onSetVideoEffect?: (update: Partial<VideoEffect>) => void;
 }
 interface VideoBubbleProps {
   stream: MediaStream | null;
@@ -593,8 +593,6 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                         onClick={() =>
                           onSetVideoEffect?.({
                             filter: f.id,
-                            aura: localVideoEffect?.aura || 'none',
-                            reaction: localVideoEffect?.reaction || null,
                           })
                         }
                         className={`px-2 py-1 rounded-lg text-[11px] flex items-center justify-center gap-1 transition-all duration-[var(--duration-quick)] ${
@@ -624,9 +622,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                         type="button"
                         onClick={() =>
                           onSetVideoEffect?.({
-                            filter: localVideoEffect?.filter || 'none',
                             aura: a.id,
-                            reaction: localVideoEffect?.reaction || null,
                           })
                         }
                         className={`px-2 py-1 rounded-lg text-[11px] flex items-center justify-center gap-1 transition-all duration-[var(--duration-quick)] ${
@@ -652,8 +648,6 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                     type="button"
                     onClick={() =>
                       onSetVideoEffect?.({
-                        filter: localVideoEffect?.filter || 'none',
-                        aura: localVideoEffect?.aura || 'none',
                         reaction: null,
                       })
                     }
@@ -673,8 +667,6 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                         type="button"
                         onClick={() =>
                           onSetVideoEffect?.({
-                            filter: localVideoEffect?.filter || 'none',
-                            aura: localVideoEffect?.aura || 'none',
                             reaction: emoji,
                           })
                         }

@@ -44,7 +44,7 @@ export interface UseWebRTCReturn {
   switchAudioDevice: (deviceId: string) => Promise<void>;
   switchVideoDevice: (deviceId: string) => Promise<void>;
   localVideoEffect: VideoEffect;
-  setVideoEffect: (effect: VideoEffect) => void;
+  setVideoEffect: (update: Partial<VideoEffect>) => void;
   startCall: () => Promise<void>;
   leaveCall: () => void;
   toggleMute: () => Promise<void>;
@@ -737,11 +737,18 @@ export function useWebRTC({
   }, [isVideoOff]);
 
   // Set and broadcast video effect (Around.co filters & aura)
-  const setVideoEffect = useCallback((effect: VideoEffect) => {
-    setLocalVideoEffect(effect);
-    try {
-      localStorage.setItem('eventstormer_video_effect', JSON.stringify(effect));
-    } catch {}
+  // Accepts partial updates to avoid stale-prop overwrites when multiple effects change rapidly
+  const setVideoEffect = useCallback((update: Partial<VideoEffect>) => {
+    setLocalVideoEffect((prev) => {
+      const next = { ...prev, ...update };
+      try {
+        localStorage.setItem('eventstormer_video_effect', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+
+    const merged = { ...localVideoEffectRef.current, ...update };
+    localVideoEffectRef.current = merged;
 
     for (const peerId of peerConnectionsRef.current.keys()) {
       sendMessage({
@@ -750,7 +757,7 @@ export function useWebRTC({
         roomId: currentRoomIdRef.current,
         signal: {
           type: 'video-effect',
-          data: effect,
+          data: merged,
         },
       });
     }
