@@ -545,7 +545,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         <BreakoutBar
           session={state.breakoutSession}
           currentRoomId={currentBreakoutRoomId}
-          peers={peers}
+          peers={visiblePeers}
           onSelectRoom={handleJoinBreakoutRoom}
           onOpenModal={() => setIsBreakoutModalOpen(true)}
         />
@@ -563,8 +563,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           swimlanes={state.swimlanes}
           peers={
             currentBreakoutRoomId
-              ? peers.filter((p) => p.breakoutRoomId === currentBreakoutRoomId)
-              : peers
+              ? visiblePeers.filter((p) => p.breakoutRoomId === currentBreakoutRoomId)
+              : visiblePeers
           }
           remotePeers={webrtc.remotePeers}
           followingClientId={followingClientId}

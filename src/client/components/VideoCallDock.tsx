@@ -104,9 +104,15 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
     if (!el || !stream) return;
     const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
     stream.addEventListener('addtrack', onLoaded);
+    for (const track of stream.getTracks()) {
+      track.addEventListener('unmute', onLoaded);
+    }
     el.addEventListener('loadeddata', onLoaded);
     return () => {
       stream.removeEventListener('addtrack', onLoaded);
+      for (const track of stream.getTracks()) {
+        track.removeEventListener('unmute', onLoaded);
+      }
       el.removeEventListener('loadeddata', onLoaded);
     };
   }, [stream]);
@@ -123,7 +129,7 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
     !isVideoOff &&
     !!stream &&
     stream.getVideoTracks().length > 0 &&
-    stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live' && !t.muted);
+    stream.getVideoTracks().some((t) => t.enabled && t.readyState !== 'ended');
 
   return (
     <div
@@ -136,7 +142,7 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
       } (Click to expand feed)`}
     >
       <div
-        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] select-none ${
+        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] select-none ${
           getAuraClasses(videoEffect?.aura, isSpeaking)
         } ${
           isPinned
@@ -147,34 +153,37 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
           backgroundColor: hasVideoTrack ? '#0f172a' : color,
         }}
       >
-        {/* Always-mounted video element for continuous audio/video playback */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted={isLocal}
-          style={{ filter: getFilterCss(videoEffect?.filter) }}
-          className={`w-full h-full object-cover transition-opacity duration-[var(--duration-quick)] ${
-            hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
-          } ${isLocal ? 'scale-x-[-1]' : ''}`}
-        />
+        {/* Circular inner frame for video and avatar initials clipping */}
+        <div className="absolute inset-0 rounded-full overflow-hidden">
+          {/* Always-mounted video element for continuous audio/video playback */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted={isLocal}
+            style={{ filter: getFilterCss(videoEffect?.filter) }}
+            className={`w-full h-full object-cover transition-opacity duration-[var(--duration-quick)] ${
+              hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
+            } ${isLocal ? 'scale-x-[-1]' : ''}`}
+          />
 
-        {/* Fallback avatar initials when video is off */}
-        {!hasVideoTrack && (
-          <div
-            className="w-full h-full flex items-center justify-center font-bold text-white text-base sm:text-lg shadow-inner"
-            style={{ backgroundColor: color }}
-          >
-            {initials}
-          </div>
-        )}
+          {/* Fallback avatar initials when video is off */}
+          {!hasVideoTrack && (
+            <div
+              className="w-full h-full flex items-center justify-center font-bold text-white text-base sm:text-lg shadow-inner"
+              style={{ backgroundColor: color }}
+            >
+              {initials}
+            </div>
+          )}
 
-        {/* Local user tag */}
-        {isLocal && (
-          <div className="absolute top-1 left-1 px-1 py-0.2 bg-black/60 rounded text-[9px] font-semibold text-slate-200 backdrop-blur-xs">
-            You
-          </div>
-        )}
+          {/* Local user tag */}
+          {isLocal && (
+            <div className="absolute top-1 left-1 px-1 py-0.2 bg-black/60 rounded text-[9px] font-semibold text-slate-200 backdrop-blur-xs">
+              You
+            </div>
+          )}
+        </div>
         {/* Screen share badge */}
         {isScreenSharing && (
           <div className="absolute top-1 right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-indigo-600 border border-slate-900 flex items-center justify-center text-white shadow-md animate-pulse">

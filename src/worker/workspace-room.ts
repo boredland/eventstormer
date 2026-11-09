@@ -772,7 +772,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
           if (!otherAtt?.clientId) continue;
 
           const otherRoom = otherAtt.breakoutRoomId || null;
-          if (otherRoom === currentRoom) {
+          if (otherRoom === currentRoom && otherAtt.webrtcInCall) {
             try {
               otherWs.send(
                 JSON.stringify({
@@ -783,17 +783,15 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
               );
             } catch {}
 
-            if (otherAtt.webrtcInCall) {
-              try {
-                ws.send(
-                  JSON.stringify({
-                    type: 'webrtc:peer-joined',
-                    clientId: otherAtt.clientId,
-                    roomId: currentRoom,
-                  } satisfies ServerMessage)
-                );
-              } catch {}
-            }
+            try {
+              ws.send(
+                JSON.stringify({
+                  type: 'webrtc:peer-joined',
+                  clientId: otherAtt.clientId,
+                  roomId: currentRoom,
+                } satisfies ServerMessage)
+              );
+            } catch {}
           }
         }
         break;

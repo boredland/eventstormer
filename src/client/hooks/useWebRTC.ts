@@ -57,21 +57,9 @@ export interface UseWebRTCReturn {
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
-  { urls: 'stun:stun1.l.google.com:19302' },
-  // Free TURN servers (Open Relay) — required for peers behind symmetric NAT
-  // where STUN alone cannot establish direct connectivity
-  {
-    urls: 'turn:openrelay.metered.ca:80',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
+  // Free TURN server (Open Relay) for peers behind symmetric NAT
   {
     urls: 'turn:openrelay.metered.ca:443',
-    username: 'openrelayproject',
-    credential: 'openrelayproject',
-  },
-  {
-    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
@@ -264,6 +252,30 @@ export function useWebRTC({
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     peerConnectionsRef.current.set(peerId, pc);
 
+    // Renegotiation handler — MUST be set before addTrack/addTransceiver so initial track
+    // addition fires it. Uses makingOffer flag to prevent glare.
+    let makingOffer = false;
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (makingOffer || pc.signalingState !== 'stable') return;
+        const isInitial = !pc.currentRemoteDescription;
+        if (isInitial && user.clientId <= peerId) return;
+        makingOffer = true;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendMessage({
+          type: 'webrtc:signal',
+          targetClientId: peerId,
+          roomId: currentRoomIdRef.current,
+          signal: { type: 'offer', data: offer },
+        });
+      } catch (err) {
+        console.warn('Negotiation failed for peer', peerId, err);
+      } finally {
+        makingOffer = false;
+      }
+    };
+
     // Attach local stream tracks
     const activeStream = screenStreamRef.current || localStreamRef.current;
     if (activeStream && activeStream.getTracks().length > 0) {
@@ -285,23 +297,6 @@ export function useWebRTC({
         pc.addTransceiver('video', { direction: 'recvonly' });
       } catch {}
     }
-
-    // Renegotiation handler — fires when addTrack/replaceTrack requires a new SDP exchange
-    pc.onnegotiationneeded = async () => {
-      try {
-        if (pc.signalingState !== 'stable') return;
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        sendMessage({
-          type: 'webrtc:signal',
-          targetClientId: peerId,
-          roomId: currentRoomIdRef.current,
-          signal: { type: 'offer', data: offer },
-        });
-      } catch (err) {
-        console.warn('Negotiation failed for peer', peerId, err);
-      }
-    };
 
     // ICE Candidate generation
     pc.onicecandidate = (event) => {
@@ -423,9 +418,8 @@ export function useWebRTC({
           data: localVideoEffectRef.current,
         },
       });
-      // Deterministic initiator rule: client with higher clientId sends the offer
-      // Only create offers when call is active (local tracks exist for sendrecv)
-      if (user.clientId > peerId && isCallActiveRef.current) {
+      // Fallback: create initial offer if onnegotiationneeded didn't fire (e.g., no local tracks yet)
+      if (user.clientId > peerId && isCallActiveRef.current && pc.signalingState === 'stable') {
         try {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -433,13 +427,10 @@ export function useWebRTC({
             type: 'webrtc:signal',
             targetClientId: peerId,
             roomId: currentRoomIdRef.current,
-            signal: {
-              type: 'offer',
-              data: offer,
-            },
+            signal: { type: 'offer', data: offer },
           });
         } catch (err) {
-          console.warn('Failed to create/send offer to peer', peerId, err);
+          console.warn('Fallback offer failed for peer', peerId, err);
         }
       }
     } else if (msg.type === 'webrtc:peer-left') {
@@ -503,6 +494,13 @@ export function useWebRTC({
       }
       try {
         if (signal.type === 'offer') {
+          // Glare handling via WebRTC Perfect Negotiation
+          if (pc.signalingState !== 'stable') {
+            // Impolite peer (higher clientId) ignores colliding offer
+            if (user.clientId > fromClientId) return;
+            // Polite peer (lower clientId) rolls back its local offer
+            await pc.setLocalDescription({ type: 'rollback' });
+          }
           await pc.setRemoteDescription(new RTCSessionDescription(signal.data));
 
           // Drain queued candidates

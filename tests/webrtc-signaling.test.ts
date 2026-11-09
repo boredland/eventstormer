@@ -67,7 +67,7 @@ class MockWorkspaceSignalingRouter {
           if (!otherAtt?.clientId) continue;
 
           const otherRoom = otherAtt.breakoutRoomId || null;
-          if (otherRoom === currentRoom) {
+          if (otherRoom === currentRoom && otherAtt.webrtcInCall) {
             otherWs.send(
               JSON.stringify({
                 type: 'webrtc:peer-joined',
@@ -76,15 +76,13 @@ class MockWorkspaceSignalingRouter {
               } satisfies ServerMessage)
             );
 
-            if (otherAtt.webrtcInCall) {
-              ws.send(
-                JSON.stringify({
-                  type: 'webrtc:peer-joined',
-                  clientId: otherAtt.clientId,
-                  roomId: currentRoom,
-                } satisfies ServerMessage)
-              );
-            }
+            ws.send(
+              JSON.stringify({
+                type: 'webrtc:peer-joined',
+                clientId: otherAtt.clientId,
+                roomId: currentRoom,
+              } satisfies ServerMessage)
+            );
           }
         }
         break;
@@ -189,14 +187,8 @@ describe('WebRTC P2P Signaling & Room Isolation', () => {
       roomId: null,
     });
 
-    // Client 2 receives peer-joined from client 1
-    expect(client2.sentMessages).toHaveLength(1);
-    expect(client2.sentMessages[0]).toEqual({
-      type: 'webrtc:peer-joined',
-      clientId: 'client-1',
-      roomId: null,
-    });
-
+    // Client 2 is not in call yet, so receives 0 peer-joined messages (prevents premature offer glare)
+    expect(client2.sentMessages).toHaveLength(0);
     // Client 2 also starts call
     router.handleMessage(client2, {
       type: 'webrtc:join',
@@ -262,19 +254,21 @@ describe('WebRTC P2P Signaling & Room Isolation', () => {
     router.addSocket(charlie);
     router.addSocket(dave);
 
+    // Charlie is in Breakout Room 1 and joins call
+    router.handleMessage(charlie, {
+      type: 'webrtc:join',
+      roomId: 'room-alpha',
+    });
+
     // Bob starts call in Breakout Room 1
     router.handleMessage(bob, {
       type: 'webrtc:join',
       roomId: 'room-alpha',
     });
 
-    // Charlie (in same breakout room) should receive peer-joined
-    expect(charlie.sentMessages).toHaveLength(1);
-    expect(charlie.sentMessages[0]).toEqual({
-      type: 'webrtc:peer-joined',
-      clientId: 'bob',
-      roomId: 'room-alpha',
-    });
+    // Charlie (also in call in same breakout room) receives peer-joined
+    expect(charlie.sentMessages.some((m) => m.type === 'webrtc:peer-joined' && m.clientId === 'bob')).toBe(true);
+    expect(bob.sentMessages.some((m) => m.type === 'webrtc:peer-joined' && m.clientId === 'charlie')).toBe(true);
 
     // Alice (Main Room) and Dave (Room Beta) MUST NOT receive any message
     expect(alice.sentMessages).toHaveLength(0);

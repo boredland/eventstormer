@@ -43,13 +43,18 @@ const PeerVideoElement: React.FC<{ stream: MediaStream; filterCss?: string }> = 
       if (el && el.paused) el.play().catch(() => undefined);
     };
     stream.addEventListener('addtrack', onLoaded);
+    for (const track of stream.getTracks()) {
+      track.addEventListener('unmute', onLoaded);
+    }
     if (node) node.addEventListener('loadeddata', onLoaded);
     return () => {
       stream.removeEventListener('addtrack', onLoaded);
+      for (const track of stream.getTracks()) {
+        track.removeEventListener('unmute', onLoaded);
+      }
       if (node) node.removeEventListener('loadeddata', onLoaded);
     };
   }, [stream]);
-
   // Clear stale stream on unmount
   useEffect(() => {
     return () => { wantRef.current = null; };
@@ -90,7 +95,7 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
           remoteState?.stream &&
           !remoteState.isVideoOff &&
           remoteState.stream.getVideoTracks().length > 0 &&
-          remoteState.stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live' && !t.muted);
+          remoteState.stream.getVideoTracks().some((t) => t.enabled && t.readyState !== 'ended');
 
         return (
           <div
