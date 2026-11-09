@@ -91,8 +91,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
         </div>
 
         <div className="flex items-center gap-4 text-xs font-semibold text-slate-400">
-          <span className="hidden sm:inline flex items-center gap-1 text-emerald-400">
-            <ShieldCheck className="w-4 h-4" /> Zero-Sign-in Realtime
+          <span className="hidden sm:inline-flex items-center gap-1.5 text-emerald-400">
+            <ShieldCheck className="w-4 h-4 shrink-0" />
+            <span>Zero-Sign-in Realtime</span>
           </span>
         </div>
       </nav>
