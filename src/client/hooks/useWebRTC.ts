@@ -337,7 +337,10 @@ export function useWebRTC({
 
   // Handle incoming signaling messages from websocket
   const handleServerMessage = useCallback(async (msg: ServerMessage) => {
-    if (!isCallActiveRef.current) return;
+    // Allow peer-joined/left state notifications through even before call is fully active
+    // to avoid race conditions where signaling arrives during getUserMedia initialization
+    const isStateNotification = msg.type === 'webrtc:peer-joined' || msg.type === 'webrtc:peer-left';
+    if (!isCallActiveRef.current && !isStateNotification) return;
 
     if (msg.type === 'webrtc:peer-joined') {
       const { clientId: peerId, roomId } = msg;
@@ -387,7 +390,8 @@ export function useWebRTC({
         },
       });
       // Deterministic initiator rule: client with higher clientId sends the offer
-      if (user.clientId > peerId) {
+      // Only create offers when call is active (local tracks exist for sendrecv)
+      if (user.clientId > peerId && isCallActiveRef.current) {
         try {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -576,6 +580,7 @@ export function useWebRTC({
     originalCamTrackRef.current = effectiveStream.getVideoTracks()[0] || null;
 
     setLocalStream(effectiveStream);
+    isCallActiveRef.current = true;
     setIsCallActive(true);
     setIsVideoOff(initialVideoOff);
     setIsMuted(initialMuted);
@@ -987,7 +992,7 @@ export function useWebRTC({
       type: 'webrtc:join',
       roomId: currentRoomId,
     });
-  }, [currentRoomId, isCallActive, sendMessage]);
+  }, [currentRoomId, sendMessage]);
 
   // Teardown when component unmounts
   useEffect(() => {
