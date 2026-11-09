@@ -403,6 +403,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
               x: parsed.x,
               y: parsed.y,
               lastActive: now,
+              breakoutRoomId: att.breakoutRoomId || undefined,
             },
           },
           ws
@@ -657,6 +658,18 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
 
       case 'breakout:end': {
         if (parsed.mergeToSwimlanes) {
+          let sessionRooms: BreakoutRoom[] = [];
+          const sessionRow = sql.exec<{ value: string }>(
+            `SELECT value FROM workspace_state WHERE key = 'breakout_session'`
+          ).toArray()[0];
+          if (sessionRow?.value) {
+            try {
+              sessionRooms = (JSON.parse(sessionRow.value) as BreakoutSessionState).rooms || [];
+            } catch {
+              // fallback
+            }
+          }
+
           const breakoutRows = sql.exec<{ breakout_room_id: string }>(
             `SELECT DISTINCT breakout_room_id FROM stickies WHERE breakout_room_id IS NOT NULL`
           ).toArray();
@@ -673,8 +686,12 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
             const bId = row.breakout_room_id;
             if (!bId) continue;
 
+            const roomObj = sessionRooms.find((r) => r.id === bId);
+            const laneName = roomObj?.name
+              ? `Sub-Group: ${roomObj.name}`
+              : `Sub-Group: ${bId.replace(/[-_]/g, ' ')}`;
+            const laneColor = roomObj?.color || '#818cf8';
             const laneId = `lane-breakout-${bId}-${Date.now()}`;
-            const laneName = `Sub-Group: ${bId.replace(/[-_]/g, ' ')}`;
             const laneHeight = 280;
 
             sql.exec(
@@ -683,9 +700,8 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
               laneName,
               currentY,
               laneHeight,
-              '#818cf8'
+              laneColor
             );
-
             const stickiesInRoom = sql.exec<{ id: string }>(
               `SELECT id FROM stickies WHERE breakout_room_id = ?`,
               bId

@@ -129,6 +129,13 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     });
   }, [state.stickies, state.pivotalLines, state.swimlanes, setPresent]);
 
+  // Automatically return attendees to main room when breakout session ends
+  useEffect(() => {
+    if (!state.breakoutSession?.active && currentBreakoutRoomId !== null) {
+      setCurrentBreakoutRoomId(null);
+    }
+  }, [state.breakoutSession?.active, currentBreakoutRoomId]);
+
   // Mutations
   const handleUpsertSticky = useCallback(
     (sticky: StickyNote) => {
