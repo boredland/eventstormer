@@ -563,7 +563,7 @@ def render_ad_promo_video(output_path):
             draw.text((WIDTH // 2 - 280, 200), "Model Complex Software", font=font_hero, fill=(255, 255, 255))
             draw.text((WIDTH // 2 - 220, 260), "At The Speed Of Thought.", font=font_hero, fill=(249, 115, 22))
 
-            draw.text((WIDTH // 2 - 340, 350), "Alberto Brandolini's EventStorming — With Serverless P2P Video Mesh & Around Effects.", font=font_base, fill=(148, 163, 184))
+            draw.text((WIDTH // 2 - 380, 350), "Alberto Brandolini's EventStorming + Serverless P2P Video Calls with Around.co Effects.", font=font_base, fill=(148, 163, 184))
 
             pills = [
                 ("⚡ 0 Sign-in Needed", (59, 130, 246)),
@@ -612,26 +612,62 @@ def render_ad_promo_video(output_path):
             draw.text((300, 518), "Filters (Cyberpunk, Noir) • Glow Auras • 1-Click Follow Mode", font=font_xs, fill=(148, 163, 184))
 
         elif t < 11.5:
-            # Scene 3: Feature Highlights
+            # Scene 3: P2P Video Call in Action — the hero feature
             draw_canvas_grid(draw, WIDTH, HEIGHT)
-            draw.text((WIDTH // 2 - 270, 75), "Engineered for Remote DDD Workshops", font=font_title, fill=(255, 255, 255))
 
-            cards = [
-                ("1. Brandolini DDD Syntax", "Strict geometries & color codes", "Events • Hotspots • Roles • Policies", (249, 115, 22)),
-                ("2. Serverless P2P Video Mesh", "Zero audio/video server records", "Around Filters • Neon Auras • Badges", (236, 72, 153)),
-                ("3. Breakouts & Follow Mode", "Sub-group tables with auto-merge", "Room Audio Isolation • 1-Click Follow", (59, 130, 246)),
+            # Big title
+            draw.text((WIDTH // 2 - 320, 40), "Serverless P2P Video Calls — Built In", font=font_title, fill=(255, 255, 255))
+
+            # Left side: Large video call simulation with 3 participants
+            # Participant 1: Alex (Cyberpunk filter + Crown reaction)
+            p1_cx, p1_cy = 220, 280
+            draw.ellipse([p1_cx - 55, p1_cy - 55, p1_cx + 55, p1_cy + 55], outline=(34, 211, 238), width=3)
+            draw.ellipse([p1_cx - 50, p1_cy - 50, p1_cx + 50, p1_cy + 50], fill=(14, 165, 233))
+            draw.text((p1_cx - 15, p1_cy - 10), "AL", font=font_xl, fill=(255, 255, 255))
+            draw.text((p1_cx - 12, p1_cy - 72), "👑", font=font_base, fill=(255, 255, 255))
+            draw_rounded_rect(draw, [p1_cx - 65, p1_cy + 65, p1_cx + 65, p1_cy + 92], 12, fill=(14, 165, 233), outline=None)
+            draw.text((p1_cx - 55, p1_cy + 70), "Alex (Architect)", font=font_xs, fill=(255, 255, 255))
+            draw.text((p1_cx - 35, p1_cy + 100), "⚡ Cyberpunk", font=font_xs, fill=(34, 211, 238))
+
+            # Participant 2: Sarah (speaking, pulsing emerald ring)
+            p2_cx, p2_cy = 480, 280
+            pulse = int(6 * math.sin(t * 8))
+            draw.ellipse([p2_cx - 55 - pulse, p2_cy - 55 - pulse, p2_cx + 55 + pulse, p2_cy + 55 + pulse], outline=(52, 211, 153), width=4)
+            draw.ellipse([p2_cx - 50, p2_cy - 50, p2_cx + 50, p2_cy + 50], fill=(249, 115, 22))
+            draw.text((p2_cx - 15, p2_cy - 10), "SA", font=font_xl, fill=(255, 255, 255))
+            draw_rounded_rect(draw, [p2_cx - 70, p2_cy + 65, p2_cx + 70, p2_cy + 92], 12, fill=(5, 150, 105), outline=None)
+            draw.text((p2_cx - 62, p2_cy + 70), "Sarah (Product)", font=font_xs, fill=(255, 255, 255))
+            draw.text((p2_cx - 38, p2_cy + 100), "🎙️ Speaking...", font=font_xs, fill=(52, 211, 153))
+
+            # Participant 3: Elena (Sunset aura + Pastel filter)
+            p3_cx, p3_cy = 740, 280
+            draw.ellipse([p3_cx - 55, p3_cy - 55, p3_cx + 55, p3_cy + 55], outline=(251, 191, 36), width=3)
+            draw.ellipse([p3_cx - 50, p3_cy - 50, p3_cx + 50, p3_cy + 50], fill=(168, 85, 247))
+            draw.text((p3_cx - 15, p3_cy - 10), "EL", font=font_xl, fill=(255, 255, 255))
+            draw.text((p3_cx - 12, p3_cy - 72), "🌸", font=font_base, fill=(255, 255, 255))
+            draw_rounded_rect(draw, [p3_cx - 65, p3_cy + 65, p3_cx + 65, p3_cy + 92], 12, fill=(168, 85, 247), outline=None)
+            draw.text((p3_cx - 58, p3_cy + 70), "Elena (Expert)", font=font_xs, fill=(255, 255, 255))
+            draw.text((p3_cx - 35, p3_cy + 100), "🌅 Sunset Glow", font=font_xs, fill=(251, 191, 36))
+
+            # Right side: Feature callouts
+            features = [
+                ("🎥", "Webcam Bubbles on Cursors", "Live video floats above each peer's cursor", (34, 211, 238)),
+                ("✨", "Around.co Cam Effects", "Noir • Cyberpunk • Sunset • Phosphor filters", (236, 72, 153)),
+                ("🟢", "Active Speaker Detection", "Pulsing rings highlight who's talking", (52, 211, 153)),
+                ("🖥️", "Screen Share PiP", "Share screens in floating windows", (99, 102, 241)),
+                ("👁️", "1-Click Follow Mode", "Track facilitators around the canvas", (251, 191, 36)),
+                ("🔒", "100% Serverless P2P", "Zero media servers, zero recordings", (244, 63, 94)),
             ]
-            for c_idx, (c_title, c_desc, c_tags, c_col) in enumerate(cards):
-                cx = 80 + c_idx * 380
-                draw_rounded_rect(draw, [cx, 150, cx + 350, 490], 16, fill=(15, 23, 42), outline=c_col, width=2)
-                draw.rectangle([cx, 150, cx + 350, 165], fill=c_col)
-                draw.text((cx + 20, 190), c_title, font=font_lg, fill=(255, 255, 255))
-                draw.text((cx + 20, 240), c_desc, font=font_sm, fill=(203, 213, 225))
-                draw_rounded_rect(draw, [cx + 16, 300, cx + 334, 360], 8, fill=(30, 41, 59), outline=None)
-                draw.text((cx + 24, 322), c_tags, font=font_xs, fill=(251, 191, 36))
+            for f_idx, (emoji, title, desc, color) in enumerate(features):
+                fy = 170 + f_idx * 72
+                draw_rounded_rect(draw, [920, fy, 1240, fy + 58], 10, fill=(15, 23, 42), outline=color, width=1)
+                draw.text((935, fy + 10), emoji, font=font_base, fill=(255, 255, 255))
+                draw.text((965, fy + 8), title, font=font_sm_bold, fill=(255, 255, 255))
+                draw.text((965, fy + 30), desc, font=font_xs, fill=(148, 163, 184))
 
-                draw_rounded_rect(draw, [cx + 20, 410, cx + 330, 455], 8, fill=(c_col[0], c_col[1], c_col[2], 50), outline=c_col, width=1)
-                draw.text((cx + 50, 424), "Built-in Zero Setup", font=font_xs, fill=(255, 255, 255))
+            # Bottom banner
+            draw_rounded_rect(draw, [80, 530, 1200, 590], 14, fill=(30, 41, 59, 220), outline=(99, 102, 241), width=2)
+            draw.text((120, 548), "🎙️ P2P Video Mesh • Around Effects • Follow Mode • Breakout Isolation • Zero Setup", font=font_base_bold, fill=(255, 255, 255))
 
         else:
             # Scene 4: Call to Action / Outro
@@ -642,7 +678,7 @@ def render_ad_promo_video(output_path):
             draw_rounded_rect(draw, [WIDTH // 2 - 180, 310, WIDTH // 2 + 180, 380], 14, fill=(249, 115, 22), outline=(255, 255, 255), width=2)
             draw.text((WIDTH // 2 - 140, 332), "Launch Workspace ➔", font=font_xl, fill=(15, 23, 42))
 
-            draw.text((WIDTH // 2 - 320, 430), "✓ P2P Video Mesh   ✓ Around Filters & Auras   ✓ Follow Mode   ✓ Durable Objects", font=font_base, fill=(148, 163, 184))
+            draw.text((WIDTH // 2 - 340, 430), "✓ P2P Video Calls   ✓ Around Filters & Auras   ✓ Follow Mode   ✓ Breakout Rooms", font=font_base, fill=(148, 163, 184))
             draw.text((WIDTH // 2 - 160, 480), "Zero account needed • Sub-5ms multiplayer", font=font_xs, fill=(100, 116, 139))
 
         img.save(os.path.join(frames_dir, f"frame_{frame_idx:04d}.png"))
