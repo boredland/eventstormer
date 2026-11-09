@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "eventstormer",
+  "account_id": "cd1e88db5a44de0f45317275cbcef879",
   "main": "src/worker/index.ts",
   "compatibility_date": "2025-02-01",
   "compatibility_flags": ["nodejs_compat"],
