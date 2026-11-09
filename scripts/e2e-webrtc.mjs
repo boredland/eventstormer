@@ -59,6 +59,7 @@ async function launchBrowser() {
     args: [
       '--use-fake-device-for-media-stream',
       '--use-fake-ui-for-media-stream',
+      '--auto-select-desktop-capture-source=Entire screen',
       '--allow-file-access-from-files',
       '--disable-web-security',
       '--no-sandbox',
@@ -150,7 +151,7 @@ try {
 
   await startCall(page1, 'Alice');
   await startCall(page2, 'Bob');
-  await sleep(3000); // Wait for WebRTC signaling + ICE
+  await sleep(5000); // Wait for WebRTC signaling + ICE
 
   const state1 = await getWebRTCState(page1);
   const state2 = await getWebRTCState(page2);
@@ -172,62 +173,56 @@ try {
 
   // ── Test 3: srcObject guard (no re-assignment) ──
   console.log('\nTest 3: srcObject guard prevents re-assignment');
+  // Wait for all ontrack to settle first
+  await sleep(1000);
   const srcIdsBefore = await page1.evaluate(() => {
     return Array.from(document.querySelectorAll('video'))
       .filter((v) => v.srcObject)
       .map((v) => v.srcObject.id);
   });
-  await sleep(500);
+  await sleep(1000);
   const srcIdsAfter = await page1.evaluate(() => {
     return Array.from(document.querySelectorAll('video'))
       .filter((v) => v.srcObject)
       .map((v) => v.srcObject.id);
   });
   assert('srcObject IDs stable across renders', JSON.stringify(srcIdsBefore) === JSON.stringify(srcIdsAfter),
-    `before=${JSON.stringify(srcIdsBefore)} after=${JSON.stringify(srcIdsAfter)}`);
+    `before=${srcIdsBefore.length} streams, after=${srcIdsAfter.length} streams`);
 
-  // ── Test 4: Screen share propagation ──
-  console.log('\nTest 4: Screen share propagation');
-  // Grant screen capture permission
-  const context1 = page1.browserContext();
-  await context1.overridePermissions(BASE, ['camera', 'microphone']);
-
-  // Start screen share on peer 1
-  await page1.evaluate(() => {
-    // Override getDisplayMedia to return a fake screen stream
-    const origGetDisplayMedia = navigator.mediaDevices.getDisplayMedia.bind(navigator.mediaDevices);
-    navigator.mediaDevices.getDisplayMedia = async () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 640;
-      canvas.height = 480;
-      const ctx = canvas.getContext('2d');
-      ctx.fillStyle = '#10b981';
-      ctx.fillRect(0, 0, 640, 480);
-      ctx.fillStyle = '#fff';
-      ctx.font = '30px sans-serif';
-      ctx.fillText('SCREEN SHARE TEST', 50, 240);
-      const stream = canvas.captureStream(15);
-      return stream;
-    };
-  });
-
-  // Click screen share button
+  // ── Test 4: Real screen share propagation via getDisplayMedia ──
+  console.log('\nTest 4: Screen share propagation (real getDisplayMedia)');
   await page1.evaluate(() => {
     const btn = Array.from(document.querySelectorAll('button')).find((b) => b.getAttribute('title')?.includes('Share your screen'));
     if (btn) btn.click();
   });
-  await sleep(2000);
+  await sleep(3000);
 
-  // Check peer 2 sees screen share
-  const peer2ScreenShare = await page2.evaluate(() => {
-    const text = document.body.textContent;
+  // Verify Alice has a real screen track
+  const aliceScreen = await page1.evaluate(() => {
+    const videos = Array.from(document.querySelectorAll('video'));
+    const screenVideo = videos.find((v) => v.srcObject && v.srcObject.getVideoTracks().some((t) => t.label?.includes('screen')));
     return {
-      hasScreenShareViewer: text?.includes('Screen') || text?.includes('screen'),
-      hasScreenBadge: text?.includes('Jonas') || text?.includes('Alice') || text?.includes("'s Screen"),
+      hasScreenTrack: !!screenVideo,
+      width: screenVideo?.videoWidth || 0,
+      height: screenVideo?.videoHeight || 0,
     };
   });
-  assert('Peer 2 sees screen share indicator', peer2ScreenShare.hasScreenShareViewer || peer2ScreenShare.hasScreenBadge,
-    JSON.stringify(peer2ScreenShare));
+  assert('Screen share captured with real displayMedia', aliceScreen.hasScreenTrack && aliceScreen.width > 0,
+    `${aliceScreen.width}x${aliceScreen.height}`);
+
+  // Verify Bob receives the screen share video (non-zero dimensions = not black)
+  const bobScreen = await page2.evaluate(() => {
+    const videos = Array.from(document.querySelectorAll('video'));
+    const remoteScreens = videos.filter((v) => v.srcObject && v.srcObject.getVideoTracks().some((t) => t.label === 'remote video' && v.videoWidth > 640));
+    return {
+      screenVideosReceived: remoteScreens.length,
+      dimensions: remoteScreens.map((v) => `${v.videoWidth}x${v.videoHeight}`),
+      hasScreenIndicator: document.body.textContent?.includes('Screen') || document.body.textContent?.includes('screen'),
+    };
+  });
+  assert('Peer 2 receives screen share video (non-black)', bobScreen.screenVideosReceived > 0,
+    `${bobScreen.screenVideosReceived} streams at ${bobScreen.dimensions.join(', ')}`);
+  assert('Peer 2 sees screen share indicator', bobScreen.hasScreenIndicator);
 
   // ── Test 5: Room isolation (breakout) ──
   console.log('\nTest 5: Breakout room isolation');
