@@ -513,6 +513,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onToggleVideo={webrtc.toggleVideo}
         onToggleScreenShare={webrtc.toggleScreenShare}
         onLeaveCall={webrtc.leaveCall}
+        audioDevices={webrtc.audioDevices}
+        videoDevices={webrtc.videoDevices}
+        selectedAudioDeviceId={webrtc.selectedAudioDeviceId}
+        selectedVideoDeviceId={webrtc.selectedVideoDeviceId}
+        onSwitchAudioDevice={webrtc.switchAudioDevice}
+        onSwitchVideoDevice={webrtc.switchVideoDevice}
       />
       {/* Breakout Active Bar */}
       {state.breakoutSession?.active && (

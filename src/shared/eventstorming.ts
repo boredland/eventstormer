@@ -420,7 +420,7 @@ export type ClientMessage =
   | { type: 'breakout:end'; mergeToSwimlanes: boolean }
   | { type: 'webrtc:join'; roomId: string | null }
   | { type: 'webrtc:leave'; roomId: string | null }
-  | { type: 'webrtc:signal'; targetClientId: string; roomId: string | null; signal: { type: 'offer' | 'answer' | 'candidate'; data: any } };
+  | { type: 'webrtc:signal'; targetClientId: string; roomId: string | null; signal: { type: 'offer' | 'answer' | 'candidate' | 'screenshare'; data: any } };
 
 export type ServerMessage =
   | { type: 'init'; state: WorkspaceState; peers: PeerCursor[]; yourClientId: string }
@@ -439,7 +439,7 @@ export type ServerMessage =
   | { type: 'breakout:state'; session: BreakoutSessionState | null }
   | { type: 'webrtc:peer-joined'; clientId: string; roomId: string | null }
   | { type: 'webrtc:peer-left'; clientId: string; roomId: string | null }
-  | { type: 'webrtc:signal'; fromClientId: string; roomId: string | null; signal: { type: 'offer' | 'answer' | 'candidate'; data: any } }
+  | { type: 'webrtc:signal'; fromClientId: string; roomId: string | null; signal: { type: 'offer' | 'answer' | 'candidate' | 'screenshare'; data: any } }
   | { type: 'error'; message: string };
 
 // Pre-Packaged Sample Workshops

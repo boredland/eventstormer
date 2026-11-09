@@ -417,4 +417,49 @@ describe('WebRTC P2P Signaling & Room Isolation', () => {
     expect(calculateIsSpeaking(quietBackgroundNoise)).toBe(false);
     expect(calculateIsSpeaking(activeSpeaking)).toBe(true);
   });
+
+  it('relays screenshare state broadcasts so peers see active screen feeds', () => {
+    const router = new MockWorkspaceSignalingRouter();
+
+    const presenter = new MockWebSocket({
+      clientId: 'presenter-1',
+      name: 'Presenter',
+      color: '#3b82f6',
+      windowStart: Date.now(),
+      messageCount: 0,
+    });
+
+    const viewer = new MockWebSocket({
+      clientId: 'viewer-1',
+      name: 'Viewer',
+      color: '#ef4444',
+      windowStart: Date.now(),
+      messageCount: 0,
+    });
+
+    router.addSocket(presenter);
+    router.addSocket(viewer);
+
+    // Presenter broadcasts screenshare started
+    router.handleMessage(presenter, {
+      type: 'webrtc:signal',
+      targetClientId: 'viewer-1',
+      roomId: null,
+      signal: {
+        type: 'screenshare',
+        data: { isSharing: true },
+      },
+    });
+
+    expect(viewer.sentMessages).toHaveLength(1);
+    expect(viewer.sentMessages[0]).toEqual({
+      type: 'webrtc:signal',
+      fromClientId: 'presenter-1',
+      roomId: null,
+      signal: {
+        type: 'screenshare',
+        data: { isSharing: true },
+      },
+    });
+  });
 });
