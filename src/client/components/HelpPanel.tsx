@@ -140,11 +140,24 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, onStartTo
             <ul className="space-y-1.5 leading-relaxed">
               <li><b>Phases</b>: step-by-step guide for the facilitator, with advice for each stage.</li>
               <li><b>Timer</b>: shared countdown. Everyone sees the same time and hears a tone at zero.</li>
+              <li><b>Call</b>: optional peer-to-peer audio and video calls. Automatically isolates between the Main Room and Breakout Tables. Zero server recordings.</li>
               <li><b>Breakouts</b>: split into small groups that each get their own private board. When time is up, their work is merged onto the main board as one lane per group.</li>
               <li><b>Voting</b>: when on, every sticky shows a 👍 button. Click it to add a vote (★ with a count). Use it to find what matters most.</li>
               <li><b>Templates</b>: load a finished example to see what a board looks like.</li>
               <li><b>Export</b>: download the board as Markdown or JSON.</li>
               <li><b>Invite</b>: copies the link. Anyone with the link can join.</li>
+            </ul>
+          </section>
+
+          <section>
+            <h3 className="font-bold text-white mb-2">P2P Video & Voice Calls</h3>
+            <p className="leading-relaxed mb-2 text-slate-300">
+              Click <b>Call</b> to turn on your webcam and microphone. Calls are 100% peer-to-peer (P2P mesh WebRTC) with zero external media servers and zero recording.
+            </p>
+            <ul className="space-y-1.5 leading-relaxed text-slate-300">
+              <li><b>Circular Video Bubbles</b>: Compact video frames show live camera feeds and pulsing emerald rings when someone speaks.</li>
+              <li><b>Automatic Room Routing</b>: Entering a Breakout Room automatically switches your call to your breakout sub-group. Returning to the Main Room reconnects you with the entire workshop.</li>
+              <li><b>Controls & Screen Share</b>: Mute your mic, turn off your camera, or share your screen in a floating picture-in-picture window without blocking your view of the board.</li>
             </ul>
           </section>
 

@@ -14,6 +14,7 @@ import {
   HelpCircle,
   Users,
   Compass,
+  Video,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -37,6 +38,10 @@ interface HeaderProps {
   isSidebarOpen: boolean;
   isBreakoutActive?: boolean;
   onOpenBreakouts?: () => void;
+  isCallActive?: boolean;
+  isCallConnecting?: boolean;
+  callParticipantCount?: number;
+  onToggleCall?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -60,6 +65,10 @@ export const Header: React.FC<HeaderProps> = ({
   isSidebarOpen,
   isBreakoutActive,
   onOpenBreakouts,
+  isCallActive = false,
+  isCallConnecting = false,
+  callParticipantCount = 0,
+  onToggleCall,
 }) => {
   const [copied, setCopied] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(timerSecondsRemaining);
@@ -216,6 +225,40 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="hidden md:inline">Breakouts</span>
           {isBreakoutActive && (
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+          )}
+        </button>
+
+        {/* WebRTC Video & Voice Call Button */}
+        <button
+          id="tour-video-call"
+          onClick={onToggleCall}
+          disabled={isCallConnecting}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            isCallActive
+              ? 'bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-md shadow-emerald-900/40 ring-1 ring-emerald-400'
+              : isCallConnecting
+              ? 'bg-emerald-950/70 text-emerald-300 ring-1 ring-emerald-500/50 cursor-wait'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+          title="Video Call: optional peer-to-peer voice and video for your current room (Main or Breakout). Zero server recording, 100% private."
+        >
+          {isCallConnecting ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <Video className="w-4 h-4 text-emerald-400 animate-pulse" />
+              <span className="hidden sm:inline">Joining...</span>
+            </>
+          ) : isCallActive ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <Video className="w-4 h-4 text-white" />
+              <span className="hidden sm:inline">Call ({callParticipantCount})</span>
+            </>
+          ) : (
+            <>
+              <Video className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Call</span>
+            </>
           )}
         </button>
 

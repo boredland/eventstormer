@@ -15,6 +15,7 @@ interface UseWebSocketOptions {
   user: UserProfile;
   turnstileToken?: string;
   onStateUpdate?: (updater: (prev: WorkspaceState) => WorkspaceState) => void;
+  onServerMessage?: (msg: ServerMessage) => void;
 }
 
 export function useWebSocket({
@@ -22,13 +23,15 @@ export function useWebSocket({
   user,
   turnstileToken,
   onStateUpdate,
+  onServerMessage,
 }: UseWebSocketOptions) {
   const [isConnected, setIsConnected] = useState(false);
   const [peers, setPeers] = useState<Map<string, PeerCursor>>(new Map());
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const lastCursorSendRef = useRef<number>(0);
-
+  const onServerMessageRef = useRef(onServerMessage);
+  onServerMessageRef.current = onServerMessage;
   const sendMessage = useCallback((msg: ClientMessage) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(msg));
@@ -75,7 +78,7 @@ export function useWebSocket({
         if (unmounted) return;
         try {
           const msg = JSON.parse(event.data) as ServerMessage;
-
+          onServerMessageRef.current?.(msg);
           switch (msg.type) {
             case 'init': {
               if (onStateUpdate) {

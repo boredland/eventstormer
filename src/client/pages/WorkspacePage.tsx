@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type {
   WorkspaceState,
   WorkshopFormat,
@@ -7,6 +7,7 @@ import type {
   Swimlane,
   StickyType,
   BreakoutRoom,
+  ServerMessage,
 } from '../../shared/eventstorming';
 import { BreakoutModal } from '../components/BreakoutModal';
 import { BreakoutBar } from '../components/BreakoutBar';
@@ -14,7 +15,9 @@ import { SAMPLE_TEMPLATES } from '../../shared/eventstorming';
 import type { UserProfile, ActiveTool } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { useUndoRedo } from '../hooks/useUndoRedo';
+import { useWebRTC } from '../hooks/useWebRTC';
 import { Canvas } from '../canvas/Canvas';
+import { VideoCallDock } from '../components/VideoCallDock';
 import { Header } from '../components/Header';
 import { StickyPalette } from '../components/StickyPalette';
 import { FacilitatorSidebar } from '../components/FacilitatorSidebar';
@@ -105,12 +108,26 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     swimlanes: state.swimlanes,
   });
 
+  // Handler ref to forward signaling to WebRTC hook
+  const webrtcHandlerRef = useRef<(msg: ServerMessage) => void>(() => {});
+
   // WebSocket real-time sync hook
   const { isConnected, peers, sendMessage, sendCursor } = useWebSocket({
     workspaceId,
     user,
     onStateUpdate: setState,
+    onServerMessage: (msg) => webrtcHandlerRef.current(msg),
   });
+
+  // WebRTC P2P Voice and Video Call Hook
+  const webrtc = useWebRTC({
+    currentRoomId: currentBreakoutRoomId,
+    user,
+    peers,
+    sendMessage,
+  });
+
+  webrtcHandlerRef.current = webrtc.handleServerMessage;
 
   // Load initial template if specified and state is empty
   useEffect(() => {
@@ -471,8 +488,32 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         isSidebarOpen={isSidebarOpen}
         isBreakoutActive={!!state.breakoutSession?.active}
         onOpenBreakouts={() => setIsBreakoutModalOpen(true)}
+        isCallActive={webrtc.isCallActive}
+        isCallConnecting={webrtc.isConnecting}
+        callParticipantCount={webrtc.participantCount}
+        onToggleCall={webrtc.isCallActive ? webrtc.leaveCall : webrtc.startCall}
       />
 
+      {/* Floating P2P WebRTC Video Call Dock */}
+      <VideoCallDock
+        isCallActive={webrtc.isCallActive}
+        isMuted={webrtc.isMuted}
+        isVideoOff={webrtc.isVideoOff}
+        isScreenSharing={webrtc.isScreenSharing}
+        isLocalSpeaking={webrtc.isLocalSpeaking}
+        localStream={webrtc.localStream}
+        screenStream={webrtc.screenStream}
+        remotePeers={webrtc.remotePeers}
+        user={user}
+        currentRoomId={currentBreakoutRoomId}
+        breakoutRooms={state.breakoutSession?.rooms}
+        mediaNotice={webrtc.mediaNotice}
+        onDismissNotice={webrtc.dismissNotice}
+        onToggleMute={webrtc.toggleMute}
+        onToggleVideo={webrtc.toggleVideo}
+        onToggleScreenShare={webrtc.toggleScreenShare}
+        onLeaveCall={webrtc.leaveCall}
+      />
       {/* Breakout Active Bar */}
       {state.breakoutSession?.active && (
         <BreakoutBar

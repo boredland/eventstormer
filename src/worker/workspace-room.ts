@@ -21,6 +21,8 @@ interface SocketAttachment {
   windowStart: number;
   messageCount: number;
   breakoutRoomId?: string;
+  webrtcInCall?: boolean;
+  webrtcRoomId?: string | null;
 }
 
 export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
@@ -737,6 +739,99 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
         this.broadcast({ type: 'workspace:reloaded', state });
         break;
       }
+
+      case 'webrtc:join': {
+        if (!att?.clientId) return;
+        att.webrtcInCall = true;
+        att.webrtcRoomId = parsed.roomId || null;
+        ws.serializeAttachment(att);
+
+        const currentRoom = parsed.roomId || null;
+        const sockets = this.ctx.getWebSockets();
+
+        for (const otherWs of sockets) {
+          if (otherWs === ws) continue;
+          const otherAtt = otherWs.deserializeAttachment() as SocketAttachment | null;
+          if (!otherAtt?.clientId) continue;
+
+          const otherRoom = otherAtt.breakoutRoomId || null;
+          if (otherRoom === currentRoom) {
+            try {
+              otherWs.send(
+                JSON.stringify({
+                  type: 'webrtc:peer-joined',
+                  clientId: att.clientId,
+                  roomId: currentRoom,
+                } satisfies ServerMessage)
+              );
+            } catch {}
+
+            if (otherAtt.webrtcInCall) {
+              try {
+                ws.send(
+                  JSON.stringify({
+                    type: 'webrtc:peer-joined',
+                    clientId: otherAtt.clientId,
+                    roomId: currentRoom,
+                  } satisfies ServerMessage)
+                );
+              } catch {}
+            }
+          }
+        }
+        break;
+      }
+
+      case 'webrtc:leave': {
+        if (!att?.clientId) return;
+        att.webrtcInCall = false;
+        const currentRoom = att.webrtcRoomId ?? parsed.roomId ?? null;
+        att.webrtcRoomId = undefined;
+        ws.serializeAttachment(att);
+
+        const sockets = this.ctx.getWebSockets();
+        for (const otherWs of sockets) {
+          if (otherWs === ws) continue;
+          const otherAtt = otherWs.deserializeAttachment() as SocketAttachment | null;
+          if (!otherAtt?.clientId) continue;
+
+          const otherRoom = otherAtt.breakoutRoomId || null;
+          if (otherRoom === currentRoom) {
+            try {
+              otherWs.send(
+                JSON.stringify({
+                  type: 'webrtc:peer-left',
+                  clientId: att.clientId,
+                  roomId: currentRoom,
+                } satisfies ServerMessage)
+              );
+            } catch {}
+          }
+        }
+        break;
+      }
+
+      case 'webrtc:signal': {
+        if (!att?.clientId) return;
+        const targetClientId = parsed.targetClientId;
+        const sockets = this.ctx.getWebSockets();
+        for (const targetWs of sockets) {
+          const targetAtt = targetWs.deserializeAttachment() as SocketAttachment | null;
+          if (targetAtt && targetAtt.clientId === targetClientId) {
+            const forwardMsg: ServerMessage = {
+              type: 'webrtc:signal',
+              fromClientId: att.clientId,
+              roomId: parsed.roomId,
+              signal: parsed.signal,
+            };
+            try {
+              targetWs.send(JSON.stringify(forwardMsg));
+            } catch {}
+            break;
+          }
+        }
+        break;
+      }
     }
   }
 
@@ -811,6 +906,13 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
     const att = ws.deserializeAttachment() as SocketAttachment | null;
     if (att?.clientId) {
       this.broadcast({ type: 'peer:leave', clientId: att.clientId });
+      if (att.webrtcInCall) {
+        this.broadcast({
+          type: 'webrtc:peer-left',
+          clientId: att.clientId,
+          roomId: att.webrtcRoomId ?? null,
+        });
+      }
     }
   }
 }

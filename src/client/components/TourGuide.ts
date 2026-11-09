@@ -77,6 +77,16 @@ export function startJoyrideTour() {
         },
       },
       {
+        element: '#tour-video-call',
+        popover: {
+          title: 'Live Video & Voice',
+          description:
+            'Start an instant peer-to-peer video call with participants in your room. No servers, no recordings. Entering a Breakout Room automatically isolates your call to your breakout team.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '#tour-voting',
         popover: {
           title: 'Voting',
