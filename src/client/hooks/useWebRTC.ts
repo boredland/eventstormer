@@ -592,6 +592,21 @@ export function useWebRTC({
       setupSpeakingDetector(user.clientId, effectiveStream, true);
     }
 
+    // Backfill local tracks into any peer connections created before getUserMedia resolved
+    // (peer-joined handler may have created PCs with recvonly transceivers)
+    for (const pc of peerConnectionsRef.current.values()) {
+      for (const track of effectiveStream.getTracks()) {
+        // Find a recvonly transceiver of this kind to upgrade to sendrecv
+        const tx = pc.getTransceivers().find((t) => t.receiver.track.kind === track.kind && !t.sender.track);
+        if (tx) {
+          tx.sender.replaceTrack(track).catch(() => {});
+          tx.direction = 'sendrecv';
+        } else if (!pc.getSenders().some((s) => s.track?.kind === track.kind)) {
+          try { pc.addTrack(track, effectiveStream); } catch {}
+        }
+      }
+    }
+
     // Notify room peers via websocket
     sendMessage({
       type: 'webrtc:join',
