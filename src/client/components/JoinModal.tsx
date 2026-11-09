@@ -45,9 +45,23 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onJoin }) => {
           <span className="text-xl">⚡</span>
           <h2 className="text-lg font-bold text-white">Join EventStorming Session</h2>
         </div>
-        <p className="text-xs text-slate-400 mb-5">
+        <p className="text-xs text-slate-400 mb-4">
           Zero sign-in required. Choose your display name and cursor color for real-time collaboration.
         </p>
+
+        <div className="mb-5 p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 leading-relaxed">
+          <div className="font-semibold text-white mb-1">What happens here</div>
+          <p>
+            Your team maps out how a business process works on a shared board, using colored
+            sticky notes. Each color is one kind of thing: <b className="text-amber-400">orange</b>{' '}
+            is something that happened, <b className="text-sky-400">blue</b> is an action,{' '}
+            <b className="text-pink-400">pink</b> is a problem. Hover any color at the bottom to
+            see what it means. Click <b>Help</b> at the top any time.
+          </p>
+          <p className="mt-1.5 text-slate-400">
+            Your name and color show on your cursor and stickies so others see who is working where.
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

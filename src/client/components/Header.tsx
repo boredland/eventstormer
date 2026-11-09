@@ -32,6 +32,7 @@ interface HeaderProps {
   onOpenTemplates: () => void;
   onOpenExport: () => void;
   onStartTour: () => void;
+  onOpenHelp: () => void;
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
   isBreakoutActive?: boolean;
@@ -54,6 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenTemplates,
   onOpenExport,
   onStartTour,
+  onOpenHelp,
   onToggleSidebar,
   isSidebarOpen,
   isBreakoutActive,
@@ -208,10 +210,10 @@ export const Header: React.FC<HeaderProps> = ({
               ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
-          title="Breakout Sub-Groups (Parallel Modeling)"
+          title="Breakouts: split the group into small teams, each with a private board. Their work merges back onto the main board when you end it."
         >
           <Users className="w-4 h-4 text-indigo-400" />
-          <span className="hidden sm:inline">Breakouts</span>
+          <span className="hidden md:inline">Breakouts</span>
           {isBreakoutActive && (
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
           )}
@@ -226,10 +228,10 @@ export const Header: React.FC<HeaderProps> = ({
               ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
-          title="Toggle Dot-Voting Mode"
+          title="Voting: when on, each click on a sticky adds one dot. Use it to pick what matters most."
         >
           <Vote className="w-4 h-4" />
-          <span className="hidden sm:inline">Voting</span>
+          <span className="hidden md:inline">Voting</span>
         </button>
 
         {/* Templates Modal */}
@@ -237,10 +239,10 @@ export const Header: React.FC<HeaderProps> = ({
           id="tour-templates"
           onClick={onOpenTemplates}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-          title="Load Sample Workshop Templates"
+          title="Templates: load a finished example board to see what a workshop looks like"
         >
           <BookOpen className="w-4 h-4" />
-          <span className="hidden xl:inline">Templates</span>
+          <span className="hidden lg:inline">Templates</span>
         </button>
 
         {/* Export Modal */}
@@ -248,10 +250,10 @@ export const Header: React.FC<HeaderProps> = ({
           id="tour-export"
           onClick={onOpenExport}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-          title="Export Workspace JSON / Markdown"
+          title="Export: download the board as Markdown or JSON"
         >
           <Download className="w-4 h-4" />
-          <span className="hidden xl:inline">Export</span>
+          <span className="hidden lg:inline">Export</span>
         </button>
 
         {/* Share Link */}
@@ -259,19 +261,21 @@ export const Header: React.FC<HeaderProps> = ({
           id="tour-share"
           onClick={handleCopyLink}
           className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition-colors"
-          title="Copy invite link to clipboard"
+          title="Share: copy the link. Anyone with it can join this board, no account needed."
         >
           {copied ? <Check className="w-4 h-4 text-emerald-300" /> : <Share2 className="w-4 h-4" />}
           <span className="hidden sm:inline">{copied ? 'Copied!' : 'Share'}</span>
         </button>
 
-        {/* Guided Tour Trigger */}
+        {/* Help */}
         <button
-          onClick={onStartTour}
-          className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
-          title="Take Guided Interactive Tour"
+          id="tour-help"
+          onClick={onOpenHelp}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition-colors"
+          title="Help: what the colors mean, how to use the board, shortcuts"
         >
           <HelpCircle className="w-4 h-4" />
+          <span className="hidden sm:inline">Help</span>
         </button>
 
         {/* Connected Participants Avatars */}

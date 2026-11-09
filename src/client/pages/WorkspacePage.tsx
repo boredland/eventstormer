@@ -21,6 +21,7 @@ import { FacilitatorSidebar } from '../components/FacilitatorSidebar';
 import { ExportModal } from '../components/ExportModal';
 import { TemplateModal } from '../components/TemplateModal';
 import { JoinModal } from '../components/JoinModal';
+import { HelpPanel } from '../components/HelpPanel';
 import { startJoyrideTour } from '../components/TourGuide';
 
 interface WorkspacePageProps {
@@ -93,6 +94,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [currentBreakoutRoomId, setCurrentBreakoutRoomId] = useState<string | null>(null);
   const [isBreakoutModalOpen, setIsBreakoutModalOpen] = useState(false);
 
@@ -464,6 +466,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onOpenTemplates={() => setIsTemplatesOpen(true)}
         onOpenExport={() => setIsExportOpen(true)}
         onStartTour={startJoyrideTour}
+        onOpenHelp={() => setIsHelpOpen(true)}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
         isBreakoutActive={!!state.breakoutSession?.active}
@@ -548,6 +551,12 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         isOpen={isTemplatesOpen}
         onClose={() => setIsTemplatesOpen(false)}
         onSelectTemplate={handleLoadTemplate}
+      />
+
+      <HelpPanel
+        isOpen={isHelpOpen}
+        onClose={() => setIsHelpOpen(false)}
+        onStartTour={startJoyrideTour}
       />
 
       {/* Breakout Session Modal */}

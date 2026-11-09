@@ -31,9 +31,9 @@ export const BreakoutBar: React.FC<BreakoutBarProps> = ({
           style={{ backgroundColor: currentRoom ? currentRoom.color || '#38bdf8' : '#6366f1' }}
         />
         <div className="flex flex-col">
-          <span className="text-[10px] uppercase font-bold text-slate-400">Current Workspace</span>
+          <span className="text-[10px] uppercase font-bold text-slate-400">You are in</span>
           <span className="font-bold text-white text-xs">
-            {currentRoom ? currentRoom.name : '🏢 Main Assembly Room'}
+            {currentRoom ? currentRoom.name : 'Main board (everyone)'}
           </span>
         </div>
       </div>
@@ -48,12 +48,12 @@ export const BreakoutBar: React.FC<BreakoutBarProps> = ({
           onChange={(e) => onSelectRoom(e.target.value || null)}
           className="bg-slate-950 text-indigo-300 font-semibold border border-slate-800 rounded-lg px-2.5 py-1 text-xs outline-none cursor-pointer hover:bg-slate-900"
         >
-          <option value="">🏢 Main Room (All Groups)</option>
+          <option value="">Main board (everyone)</option>
           {session.rooms.map((room) => {
             const count = peers.filter((p) => p.breakoutRoomId === room.id).length;
             return (
               <option key={room.id} value={room.id}>
-                🎯 {room.name} ({count} online)
+                {room.name} ({count} online)
               </option>
             );
           })}
@@ -65,14 +65,14 @@ export const BreakoutBar: React.FC<BreakoutBarProps> = ({
       {/* Members in current room */}
       <div className="flex items-center gap-1.5 text-slate-300">
         <Users className="w-3.5 h-3.5 text-emerald-400" />
-        <span className="font-semibold">{peersInThisRoom.length + 1} in this room</span>
+        <span className="font-semibold">{peersInThisRoom.length + 1} here</span>
       </div>
 
       {currentRoomId && (
         <button
           onClick={() => onSelectRoom(null)}
           className="flex items-center gap-1 px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition-colors"
-          title="Return to Main Workspace"
+          title="Leave your team and go back to the main board"
         >
           <ArrowLeft className="w-3 h-3" />
           <span>Main Board</span>
@@ -83,10 +83,10 @@ export const BreakoutBar: React.FC<BreakoutBarProps> = ({
       <button
         onClick={onOpenModal}
         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-semibold transition-colors ml-1"
-        title="Manage Breakout Sub-Groups and Merge"
+        title="Facilitator: add teams or end the breakout and merge the work back"
       >
         <Settings className="w-3 h-3" />
-        <span>Manage / Merge</span>
+        <span>Manage</span>
       </button>
     </div>
   );

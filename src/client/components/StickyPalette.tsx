@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { StickyType } from '../../shared/eventstorming';
 import { STICKY_DEFINITIONS } from '../../shared/eventstorming';
+import { STICKY_EXPLAINERS, TOOL_EXPLAINERS } from '../../shared/explainers';
 import type { ActiveTool } from '../types';
 import { MousePointer, Hand, Columns, Divide } from 'lucide-react';
 
@@ -13,6 +14,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
   activeTool,
   onSelectTool,
 }) => {
+  const [hovered, setHovered] = useState<ActiveTool | null>(null);
   const stickyTypes: StickyType[] = [
     'domain-event',
     'hotspot',
@@ -25,7 +27,64 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
     'constraint',
   ];
 
+  const hoverHandlers = (tool: ActiveTool) => ({
+    onMouseEnter: () => setHovered(tool),
+    onMouseLeave: () => setHovered(null),
+    onFocus: () => setHovered(tool),
+    onBlur: () => setHovered(null),
+  });
+
+  const stickyHover =
+    hovered && hovered in STICKY_EXPLAINERS ? (hovered as StickyType) : null;
+  const toolHover =
+    hovered && hovered in TOOL_EXPLAINERS
+      ? TOOL_EXPLAINERS[hovered as keyof typeof TOOL_EXPLAINERS]
+      : null;
+
   return (
+    <>
+      {(stickyHover || toolHover) && (
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[min(92vw,380px)] z-40 p-4 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl pointer-events-none">
+          {stickyHover ? (
+            <>
+              <div className="flex items-center gap-2 mb-1.5">
+                <span
+                  className="w-3.5 h-3.5 rounded-sm"
+                  style={{ backgroundColor: STICKY_DEFINITIONS[stickyHover].color }}
+                />
+                <span className="font-bold text-sm text-white">
+                  {STICKY_DEFINITIONS[stickyHover].label}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                {STICKY_EXPLAINERS[stickyHover].what}
+              </p>
+              <p className="text-xs text-slate-400 mt-2">
+                <span className="font-semibold text-slate-200">Example: </span>
+                {STICKY_EXPLAINERS[stickyHover].example}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">
+                <span className="font-semibold text-slate-200">Ask yourself: </span>
+                {STICKY_EXPLAINERS[stickyHover].ask}
+              </p>
+              <p className="text-[11px] text-slate-500 mt-2">
+                Click to place one, or double-click the board.
+              </p>
+            </>
+          ) : (
+            toolHover && (
+              <>
+                <div className="font-bold text-sm text-white mb-1.5">{toolHover.label}</div>
+                <p className="text-xs text-slate-300 leading-relaxed">{toolHover.what}</p>
+                <p className="text-xs text-slate-400 mt-2">
+                  <span className="font-semibold text-slate-200">How: </span>
+                  {toolHover.how}
+                </p>
+              </>
+            )
+          )}
+        </div>
+      )}
     <div
       id="tour-sticky-palette"
       className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1.5 p-2 bg-slate-900/95 border border-slate-700/80 rounded-2xl shadow-2xl backdrop-blur-md z-40 select-none max-w-[96vw] overflow-x-auto"
@@ -33,6 +92,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
       {/* Navigation Tools: Select and Pan */}
       <div className="flex items-center gap-1 pr-2 border-r border-slate-700">
         <button
+          {...hoverHandlers('select')}
           onClick={() => onSelectTool('select')}
           className={`p-2 rounded-xl transition-all ${
             activeTool === 'select'
@@ -45,6 +105,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
         </button>
 
         <button
+          {...hoverHandlers('pan')}
           onClick={() => onSelectTool('pan')}
           className={`p-2 rounded-xl transition-all ${
             activeTool === 'pan'
@@ -67,6 +128,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
           return (
             <button
               key={type}
+              {...hoverHandlers(type)}
               onClick={() => onSelectTool(type)}
               style={{
                 backgroundColor: def.color,
@@ -96,6 +158,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
       {/* Modeling Boundaries: Pivotal Line and Swimlane */}
       <div className="flex items-center gap-1 pl-2 border-l border-slate-700">
         <button
+          {...hoverHandlers('pivotal')}
           onClick={() => onSelectTool('pivotal')}
           className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             activeTool === 'pivotal'
@@ -109,6 +172,7 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
         </button>
 
         <button
+          {...hoverHandlers('swimlane')}
           onClick={() => onSelectTool('swimlane')}
           className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
             activeTool === 'swimlane'
@@ -122,5 +186,6 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
         </button>
       </div>
     </div>
+    </>
   );
 };

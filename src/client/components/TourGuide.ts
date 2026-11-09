@@ -5,13 +5,23 @@ export function startJoyrideTour() {
   const driverObj = driver({
     showProgress: true,
     animate: true,
+    nextBtnText: 'Next',
+    prevBtnText: 'Back',
+    doneBtnText: 'Got it',
     steps: [
+      {
+        popover: {
+          title: 'Welcome',
+          description:
+            'This is a shared board. Your team puts a business process on it using colored sticky notes, all at the same time. This tour takes about a minute.',
+        },
+      },
       {
         element: '#tour-sticky-palette',
         popover: {
-          title: 'Brandolini Sticky Palette',
+          title: 'Sticky notes: one color, one meaning',
           description:
-            'Alberto Brandolini’s color syntax: Orange for Domain Events (past tense), Neon Pink for Hotspots/Risks (-6° tilted), Yellow for Actors, Blue for Commands, and more. Use keyboard shortcuts [1] to [9] to spawn instantly!',
+            'Each color is a different kind of thing. Orange = something that happened. Blue = an action someone takes. Pink = a problem or question. Hover any color to see what it means, an example, and a question to ask yourself. Click one, then click the board to place it.',
           side: 'top',
           align: 'center',
         },
@@ -19,9 +29,9 @@ export function startJoyrideTour() {
       {
         element: '#tour-canvas-controls',
         popover: {
-          title: 'Infinite Canvas Navigation',
+          title: 'Move around',
           description:
-            'Hold Space + Drag or use Middle Mouse to pan freely. Scroll or pinch to zoom from 15% to 300%. Click the Maximize icon to fit all content on screen.',
+            'The board is huge. Scroll or pinch to zoom. Hold Space and drag to move around. The button with arrows fits everything on screen.',
           side: 'top',
           align: 'start',
         },
@@ -29,9 +39,9 @@ export function startJoyrideTour() {
       {
         element: '#tour-minimap',
         popover: {
-          title: 'Live Minimap',
+          title: 'Small map',
           description:
-            'Shows an overview of all stickies across the infinite canvas. Click or drag the viewport rectangle to jump anywhere instantly.',
+            'A tiny overview of the whole board. Click or drag in it to jump to another area.',
           side: 'left',
           align: 'end',
         },
@@ -39,9 +49,9 @@ export function startJoyrideTour() {
       {
         element: '#tour-phase-guide',
         popover: {
-          title: 'Facilitator Phase Guide',
+          title: 'Phases: what to do next',
           description:
-            'Guides your team through the proven EventStorming stages: Chaotic Event Generation, Reverse Narrative, Hotspots, and Swimlanes.',
+            'A step-by-step guide for the workshop. It tells you what stage you are in, what to aim for, and which stickies to use. The person leading the session usually moves through the steps.',
           side: 'bottom',
           align: 'start',
         },
@@ -49,19 +59,29 @@ export function startJoyrideTour() {
       {
         element: '#tour-timer',
         popover: {
-          title: 'Synchronized Facilitator Timer',
+          title: 'Shared timer',
           description:
-            'Keep brainstorming sessions timeboxed! The countdown timer synchronizes in real-time across all attendees with an audio alert on zero.',
+            'Everyone sees the same countdown. It keeps each step short. A tone plays at zero.',
           side: 'bottom',
           align: 'center',
         },
       },
       {
+        element: '#tour-breakouts',
+        popover: {
+          title: 'Breakouts: small teams',
+          description:
+            'Split into small groups. Each group gets its own private board and only sees its own stickies. When the facilitator ends the breakout, each group becomes a lane on the main board so everything is together again.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
         element: '#tour-voting',
         popover: {
-          title: 'Dot-Voting Mode',
+          title: 'Voting',
           description:
-            'Enable Dot-Voting mode to prioritize critical hotspots, contentious events, or key business bottlenecks as a team.',
+            'Turn this on, then click a sticky to give it a dot. The stickies with the most dots are what the group cares about most. Usually used on the pink problem stickies.',
           side: 'bottom',
           align: 'end',
         },
@@ -69,9 +89,9 @@ export function startJoyrideTour() {
       {
         element: '#tour-templates',
         popover: {
-          title: 'Sample Domain Templates',
+          title: 'Examples',
           description:
-            'Kick off quickly with real-world domains: E-Commerce Fulfillment, Insurance Claims, or Ride-Hailing architectures.',
+            'Load a finished board for a real scenario, such as an online shop or an insurance claim. Good for seeing what a result looks like. It replaces the current board.',
           side: 'bottom',
           align: 'end',
         },
@@ -79,9 +99,19 @@ export function startJoyrideTour() {
       {
         element: '#tour-share',
         popover: {
-          title: 'Instant Multi-User Collaboration',
+          title: 'Invite people',
           description:
-            'Copy the room URL and invite your team. Zero accounts, zero login barriers. Live peer cursors show where everyone is working!',
+            'Copy the link and send it. Anyone who opens it joins the same board. No account needed. You will see their cursors move live.',
+          side: 'bottom',
+          align: 'end',
+        },
+      },
+      {
+        element: '#tour-help',
+        popover: {
+          title: 'Stuck? Click Help',
+          description:
+            'Help explains every color, every button, and the keyboard shortcuts. Open it any time.',
           side: 'bottom',
           align: 'end',
         },

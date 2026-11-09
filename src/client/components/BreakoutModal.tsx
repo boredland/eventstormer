@@ -67,7 +67,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-base font-bold text-white">Breakout Sub-Groups</h2>
+            <h2 className="text-base font-bold text-white">Breakouts: work in small teams</h2>
           </div>
           <button
             onClick={onClose}
@@ -88,7 +88,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
                 <div>
                   <span className="text-xs font-bold text-indigo-400 uppercase tracking-wider">Session Active</span>
                   <p className="text-sm font-semibold text-white mt-0.5">
-                    {breakoutSession.rooms.length} sub-groups currently working in parallel
+                    {breakoutSession.rooms.length} teams are working in parallel
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 text-xs font-mono bg-indigo-900/50 text-indigo-300 px-3 py-1.5 rounded-lg border border-indigo-500/40">
@@ -99,7 +99,11 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
 
               {/* Rooms list */}
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Sub-Group Rooms</span>
+                <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Teams</span>
+                <p className="text-xs text-slate-400">
+                  Each team has its own board. You only see stickies and cursors from the team you
+                  joined. Click Join to switch. Add your stickies in your team's board.
+                </p>
                 <div className="grid grid-cols-1 gap-2">
                   {breakoutSession.rooms.map((room) => {
                     const count = peers.filter((p) => p.breakoutRoomId === room.id).length;
@@ -151,7 +155,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
                     className="rounded border-slate-700 text-indigo-600 focus:ring-0 bg-slate-950"
                   />
                   <Layers className="w-4 h-4 text-indigo-400" />
-                  <span>Automatically organize each sub-group's stickies into separate horizontal swimlanes on the main board</span>
+                  <span>When ending, turn each team's stickies into its own horizontal lane on the main board. Untick to just put them on the main board as they are.</span>
                 </label>
 
                 <button
@@ -162,21 +166,29 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
                   className="w-full py-2.5 px-4 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-red-600/20"
                 >
                   <StopCircle className="w-4 h-4" />
-                  <span>End Breakout Session & Merge to Main Board</span>
+                  <span>End Breakouts & Return Everyone to Main Board</span>
                 </button>
               </div>
             </div>
           ) : (
             /* Configure New Breakout Session */
             <div className="space-y-4">
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Split workshop participants into parallel sub-groups to eliminate remote voice-channel contention.
-                When finished, all sub-groups merge their stickies back onto the main timeline.
-              </p>
+              <div className="rounded-xl bg-slate-950/70 border border-slate-800 p-3 text-xs text-slate-300 leading-relaxed space-y-1.5">
+                <p>
+                  <b className="text-white">What this does:</b> splits everyone into small teams.
+                  Each team gets a private copy of the board to work on one part of the process,
+                  so people do not talk over each other.
+                </p>
+                <ol className="list-decimal pl-4 text-slate-400">
+                  <li>Pick how many teams and what each one works on.</li>
+                  <li>Everyone joins a team from the bar at the top of the board.</li>
+                  <li>After the time is up, end the breakout. Team work comes back to the main board as one lane per team.</li>
+                </ol>
+              </div>
 
               {/* Number of rooms */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Number of Sub-Groups</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">How many teams?</label>
                 <div className="flex items-center gap-2">
                   {[2, 3, 4].map((count) => (
                     <button
@@ -188,7 +200,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
                           : 'bg-slate-950 text-slate-400 border-slate-800 hover:bg-slate-800'
                       }`}
                     >
-                      {count} Sub-Groups
+                      {count} teams
                     </button>
                   ))}
                 </div>
@@ -196,7 +208,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
 
               {/* Room names */}
               <div className="space-y-2">
-                <label className="block text-xs font-semibold text-slate-300">Sub-Group Domain Topics</label>
+                <label className="block text-xs font-semibold text-slate-300">What does each team work on? (you can rename)</label>
                 {roomNames.slice(0, roomCount).map((name, idx) => (
                   <div key={idx} className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: ROOM_COLORS[idx % ROOM_COLORS.length] }} />
@@ -213,7 +225,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
 
               {/* Duration */}
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1.5">Breakout Timebox (Minutes)</label>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">How long (minutes)?</label>
                 <div className="flex items-center gap-2">
                   {[10, 15, 20, 30].map((m) => (
                     <button
@@ -237,7 +249,7 @@ export const BreakoutModal: React.FC<BreakoutModalProps> = ({
                 className="w-full mt-2 py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-lg shadow-indigo-600/30"
               >
                 <Play className="w-4 h-4" />
-                <span>Launch {roomCount} Breakout Sub-Groups</span>
+                <span>Start {roomCount} teams</span>
               </button>
             </div>
           )}
