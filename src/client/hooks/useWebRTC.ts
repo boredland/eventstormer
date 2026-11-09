@@ -57,9 +57,12 @@ export interface UseWebRTCReturn {
 
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
-  // Free TURN server (Open Relay) for peers behind symmetric NAT
+  // Free TURN server (Open Relay): port 80 (UDP) + port 443 (TCP fallback)
   {
-    urls: 'turn:openrelay.metered.ca:443',
+    urls: [
+      'turn:openrelay.metered.ca:80',
+      'turn:openrelay.metered.ca:443?transport=tcp',
+    ],
     username: 'openrelayproject',
     credential: 'openrelayproject',
   },
