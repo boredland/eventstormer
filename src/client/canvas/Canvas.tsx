@@ -22,6 +22,7 @@ interface CanvasProps {
   peers: PeerCursor[];
   user: UserProfile;
   activeTool: ActiveTool;
+  onSelectTool?: (tool: ActiveTool) => void;
   isVotingMode: boolean;
   onUpdateStickies: (stickies: StickyNote[]) => void;
   onUpdatePivotalLines: (lines: PivotalLine[]) => void;
@@ -46,6 +47,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   peers,
   user,
   activeTool,
+  onSelectTool,
   isVotingMode,
   onBatchMoveStickies,
   onUpsertSticky,
@@ -69,6 +71,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   const [dragState, setDragState] = useState<DragState | null>(null);
   const [marquee, setMarquee] = useState<MarqueeSelect | null>(null);
   const [isSpacePressed, setIsSpacePressed] = useState(false);
+
+  const hasDraggedRef = useRef(false);
+  const lastDragEndTimeRef = useRef(0);
 
   const [dimensions, setDimensions] = useState({ width: 1200, height: 800 });
 
@@ -269,10 +274,11 @@ export const Canvas: React.FC<CanvasProps> = ({
     setSelectedStickyIds(new Set([newSticky.id]));
   };
 
-  const duplicateSelected = () => {
-    if (selectedStickyIds.size === 0) return;
+  const duplicateSelected = (targetId?: string) => {
+    const idsToDuplicate = targetId ? new Set([targetId]) : selectedStickyIds;
+    if (idsToDuplicate.size === 0) return;
     const newSelected = new Set<string>();
-    for (const id of selectedStickyIds) {
+    for (const id of idsToDuplicate) {
       const orig = stickies.find((s) => s.id === id);
       if (orig) {
         const dup: StickyNote = {
@@ -294,6 +300,8 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Mouse Down handler on Canvas container
   const handleMouseDown = (e: React.MouseEvent) => {
+    hasDraggedRef.current = false;
+
     if (e.button === 1 || isSpacePressed || activeTool === 'pan') {
       // Middle click or Space/Pan drag
       e.preventDefault();
@@ -325,6 +333,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         // Spawn sticky of active tool
         const world = screenToWorld(e.clientX, e.clientY);
         createStickyAt(activeTool, world.x, world.y);
+        onSelectTool?.('select');
         return;
       }
 
@@ -338,6 +347,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         };
         onUpsertPivotalLine(newLine);
         setSelectedLineId(newLine.id);
+        onSelectTool?.('select');
         return;
       }
 
@@ -352,6 +362,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         };
         onUpsertSwimlane(newLane);
         setSelectedLaneId(newLane.id);
+        onSelectTool?.('select');
         return;
       }
 
@@ -373,6 +384,9 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Mouse Move
   const handleMouseMove = (e: React.MouseEvent) => {
+    if (dragState || marquee) {
+      hasDraggedRef.current = true;
+    }
     // Broadcast cursor position to peers in world coordinates
     const world = screenToWorld(e.clientX, e.clientY);
     onCursorMove(Math.round(world.x), Math.round(world.y));
@@ -488,6 +502,9 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Mouse Up
   const handleMouseUp = () => {
+    if (hasDraggedRef.current) {
+      lastDragEndTimeRef.current = Date.now();
+    }
     // If we finished dragging stickies, broadcast batch move to server
     if (dragState && dragState.type === 'stickies' && dragState.initialPositions) {
       const updates: Array<{ id: string; x: number; y: number }> = [];
@@ -524,6 +541,9 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   // Double click on canvas background creates a Domain Event
   const handleDoubleClick = (e: React.MouseEvent) => {
+    if (hasDraggedRef.current || Date.now() - lastDragEndTimeRef.current < 400) {
+      return;
+    }
     const target = e.target as HTMLElement;
     if (
       target.closest('[data-sticky-id]') ||
@@ -539,6 +559,7 @@ export const Canvas: React.FC<CanvasProps> = ({
   // Selection handlers
   const handleStickySelect = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    onSelectTool?.('select');
 
     let newSelected: Set<string>;
     if (e.shiftKey) {
@@ -577,6 +598,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   const handlePivotalSelect = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    onSelectTool?.('select');
     setSelectedLineId(id);
     setSelectedStickyIds(new Set());
     setSelectedLaneId(null);
@@ -599,6 +621,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
   const handleSwimlaneSelect = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    onSelectTool?.('select');
     setSelectedLaneId(id);
     setSelectedStickyIds(new Set());
     setSelectedLineId(null);

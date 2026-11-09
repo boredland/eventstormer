@@ -35,7 +35,10 @@ export const ExportModal: React.FC<ExportModalProps> = ({
   const systems = state.stickies.filter((s) => s.type === 'system');
   const commands = state.stickies.filter((s) => s.type === 'command');
   const policies = state.stickies.filter((s) => s.type === 'policy');
-
+  const readmodels = state.stickies.filter((s) => s.type === 'readmodel');
+  const constraints = state.stickies.filter((s) => s.type === 'constraint');
+  const opportunities = state.stickies.filter((s) => s.type === 'opportunity');
+  const values = state.stickies.filter((s) => s.type === 'value');
   const markdownContent = [
     `# EventStorming Summary: ${workspaceId}`,
     `**Format**: ${formatDef.title}`,
@@ -69,7 +72,17 @@ export const ExportModal: React.FC<ExportModalProps> = ({
     commands.map((c) => `- ⚡ Command: ${c.text || 'Untitled'}`).join('\n') || '*No commands.*',
     policies.map((p) => `- 📜 Policy: ${p.text || 'Untitled'}`).join('\n') || '*No policies.*',
     ``,
-    `## 6. Milestones (Pivotal Events)`,
+    `## 6. Read Models & Preconditions (${readmodels.length})`,
+    readmodels.map((r) => `- 📖 Read Model: ${r.text || 'Untitled'}`).join('\n') || '*No read models.*',
+    ``,
+    `## 7. Aggregates & Invariant Boundaries (${constraints.length})`,
+    constraints.map((c) => `- 🛡️ Aggregate/Constraint: ${c.text || 'Untitled'}`).join('\n') || '*No aggregates/constraints.*',
+    ``,
+    `## 8. Opportunities (${opportunities.length}) & Values (${values.length})`,
+    opportunities.map((o) => `- 💡 Opportunity: ${o.text || 'Untitled'}`).join('\n') || '*No opportunities.*',
+    values.map((v) => `- 💎 Value: ${v.text || 'Untitled'}`).join('\n') || '*No value items.*',
+    ``,
+    `## 9. Milestones (Pivotal Events)`,
     state.pivotalLines.length === 0
       ? `*No pivotal milestone lines set.*`
       : state.pivotalLines
@@ -77,7 +90,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({
           .map((l) => `- 🏁 **${l.name}** (x: ${l.x})`)
           .join('\n'),
     ``,
-    `## 7. Swimlanes`,
+    `## 10. Swimlanes`,
     state.swimlanes.length === 0
       ? `*No swimlanes configured.*`
       : state.swimlanes

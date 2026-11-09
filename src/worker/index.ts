@@ -148,6 +148,14 @@ export default {
             body: JSON.stringify({ templateKey: body.templateKey }),
           })
         );
+      } else if (body.format) {
+        await roomStub.fetch(
+          new Request(`http://internal/api/workspace/${id}/set-format`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ format: body.format }),
+          })
+        );
       }
 
       return Response.json({

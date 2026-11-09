@@ -37,7 +37,13 @@ export const PivotalLineItem: React.FC<PivotalLineItemProps> = ({
         height: '4000px',
         width: '4px',
       }}
-      onClick={(e) => onSelect(e, line.id)}
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('button') || target.closest('input')) return;
+        onSelect(e, line.id);
+      }}
+      onClick={(e) => e.stopPropagation()}
       className="group z-0 cursor-ew-resize select-none pointer-events-auto"
     >
       {/* Vertical line indicator */}

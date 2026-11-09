@@ -7,22 +7,30 @@ interface HistorySnapshot {
   swimlanes: Swimlane[];
 }
 
+function cloneSnapshot(snapshot: HistorySnapshot): HistorySnapshot {
+  return {
+    stickies: snapshot.stickies.map((s) => ({ ...s })),
+    pivotalLines: snapshot.pivotalLines.map((l) => ({ ...l })),
+    swimlanes: snapshot.swimlanes.map((l) => ({ ...l })),
+  };
+}
+
 export function useUndoRedo(initialState: HistorySnapshot) {
   const [past, setPast] = useState<HistorySnapshot[]>([]);
   const [future, setFuture] = useState<HistorySnapshot[]>([]);
-  const presentRef = useRef<HistorySnapshot>(initialState);
+  const presentRef = useRef<HistorySnapshot>(cloneSnapshot(initialState));
 
   const setPresent = useCallback((newPresent: HistorySnapshot) => {
-    presentRef.current = newPresent;
+    presentRef.current = cloneSnapshot(newPresent);
   }, []);
 
   const pushSnapshot = useCallback((snapshot: HistorySnapshot) => {
     setPast((prev) => {
-      const next = [...prev, presentRef.current];
+      const next = [...prev, cloneSnapshot(presentRef.current)];
       if (next.length > 30) next.shift();
       return next;
     });
-    presentRef.current = snapshot;
+    presentRef.current = cloneSnapshot(snapshot);
     setFuture([]);
   }, []);
 
@@ -32,9 +40,9 @@ export function useUndoRedo(initialState: HistorySnapshot) {
       const previous = prevPast[prevPast.length - 1];
       const newPast = prevPast.slice(0, prevPast.length - 1);
 
-      setFuture((prevFuture) => [presentRef.current, ...prevFuture]);
-      presentRef.current = previous;
-      applyFn(previous);
+      setFuture((prevFuture) => [cloneSnapshot(presentRef.current), ...prevFuture]);
+      presentRef.current = cloneSnapshot(previous);
+      applyFn(cloneSnapshot(previous));
 
       return newPast;
     });
@@ -46,9 +54,9 @@ export function useUndoRedo(initialState: HistorySnapshot) {
       const next = prevFuture[0];
       const newFuture = prevFuture.slice(1);
 
-      setPast((prevPast) => [...prevPast, presentRef.current]);
-      presentRef.current = next;
-      applyFn(next);
+      setPast((prevPast) => [...prevPast, cloneSnapshot(presentRef.current)]);
+      presentRef.current = cloneSnapshot(next);
+      applyFn(cloneSnapshot(next));
 
       return newFuture;
     });

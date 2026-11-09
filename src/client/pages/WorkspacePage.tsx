@@ -63,9 +63,26 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     return !!localStorage.getItem('eventstormer_user');
   });
 
-  const [state, setState] = useState<WorkspaceState>({
-    ...DEFAULT_STATE,
-    id: workspaceId,
+  const [state, setState] = useState<WorkspaceState>(() => {
+    if (initialTemplateKey && SAMPLE_TEMPLATES[initialTemplateKey]) {
+      const template = SAMPLE_TEMPLATES[initialTemplateKey];
+      return {
+        ...DEFAULT_STATE,
+        id: workspaceId,
+        format: template.format,
+        name: template.title,
+        stickies: template.stickies.map((s) => ({
+          ...s,
+          updatedAt: Date.now(),
+        })),
+        pivotalLines: [...template.pivotalLines],
+        swimlanes: [...template.swimlanes],
+      };
+    }
+    return {
+      ...DEFAULT_STATE,
+      id: workspaceId,
+    };
   });
 
   const [activeTool, setActiveTool] = useState<ActiveTool>('select');
@@ -141,11 +158,19 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         swimlanes: state.swimlanes,
       });
 
+      setState((prev) => {
+        const updateMap = new Map(updates.map((u) => [u.id, u]));
+        const stickies = prev.stickies.map((s) => {
+          const u = updateMap.get(s.id);
+          return u ? { ...s, x: u.x, y: u.y } : s;
+        });
+        return { ...prev, stickies };
+      });
+
       sendMessage({ type: 'sticky:batch-move', updates });
     },
     [state.stickies, state.pivotalLines, state.swimlanes, pushSnapshot, sendMessage]
   );
-
   const handleDeleteSticky = useCallback(
     (id: string) => {
       pushSnapshot({
@@ -308,9 +333,29 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // Template loader
   const handleLoadTemplate = useCallback(
     (templateKey: string) => {
+      const template = SAMPLE_TEMPLATES[templateKey];
+      if (template) {
+        pushSnapshot({
+          stickies: state.stickies,
+          pivotalLines: state.pivotalLines,
+          swimlanes: state.swimlanes,
+        });
+        setState((prev) => ({
+          ...prev,
+          format: template.format,
+          currentPhaseIndex: 0,
+          name: template.title,
+          stickies: template.stickies.map((s) => ({
+            ...s,
+            updatedAt: Date.now(),
+          })),
+          pivotalLines: template.pivotalLines,
+          swimlanes: template.swimlanes,
+        }));
+      }
       sendMessage({ type: 'workspace:load-template', templateKey });
     },
-    [sendMessage]
+    [state.stickies, state.pivotalLines, state.swimlanes, pushSnapshot, sendMessage]
   );
 
   // Quick Spawn Sticky from Facilitator Guide
@@ -393,6 +438,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
           peers={peers}
           user={user}
           activeTool={activeTool}
+          onSelectTool={(tool) => setActiveTool(tool)}
           isVotingMode={isVotingMode}
           onUpdateStickies={(stickies) => setState((prev) => ({ ...prev, stickies }))}
           onUpdatePivotalLines={(pivotalLines) =>

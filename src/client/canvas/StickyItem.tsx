@@ -55,7 +55,8 @@ export const StickyItem: React.FC<StickyItemProps> = ({
     if (e.key === 'Escape') {
       setIsEditing(false);
       setEditText(sticky.text);
-    } else if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    } else if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
       handleFinishEditing();
     }
   };
@@ -83,14 +84,20 @@ export const StickyItem: React.FC<StickyItemProps> = ({
     <div
       data-sticky-id={sticky.id}
       style={transformStyle}
-      onClick={(e) => {
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        const target = e.target as HTMLElement;
+        if (target.closest('button') || target.closest('textarea')) return;
         onSelect(e, sticky.id);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
       }}
       onDoubleClick={(e) => {
         e.stopPropagation();
         setIsEditing(true);
       }}
-      className={`group rounded-sm p-2 flex flex-col justify-between transition-shadow select-none cursor-grab active:cursor-grabbing ${
+      className={`group rounded-sm p-2 flex flex-col justify-between transition-shadow select-none pointer-events-auto cursor-grab active:cursor-grabbing ${
         isSelected
           ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900 shadow-xl z-20'
           : 'shadow-md hover:shadow-lg z-10'

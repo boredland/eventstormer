@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import type { WorkshopFormat } from '../../shared/eventstorming';
 import { WORKSHOP_FORMATS, SAMPLE_TEMPLATES } from '../../shared/eventstorming';
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Users, Compass, Timer, Vote } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Users, Compass, Timer, Vote, Film, Play, Volume2 } from 'lucide-react';
 
 interface LandingPageProps {
   onNavigateToWorkspace: (workspaceId: string, templateKey?: string) => void;
@@ -43,13 +43,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
       return;
     }
 
+    const template = templateKey ? SAMPLE_TEMPLATES[templateKey] : undefined;
+    const targetFormat = template ? template.format : selectedFormat;
+
     try {
       const res = await fetch('/api/workspaces', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           turnstileToken,
-          format: selectedFormat,
+          format: targetFormat,
+          templateKey,
         }),
       });
 
@@ -119,6 +123,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
           Infinite zoomable workspace, strict Brandolini color grammar, synchronized facilitator timer,
           and zero-friction URL sharing.
         </p>
+        {/* Promotional Ad Video Showcase */}
+        <div className="mt-8 w-full max-w-4xl relative group">
+          <div className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-amber-500/30 via-orange-500/30 to-pink-500/30 blur-xl opacity-60 group-hover:opacity-100 transition-opacity" />
+          <div className="relative rounded-2xl border border-slate-800 bg-slate-900/90 shadow-2xl overflow-hidden">
+            {/* Window Chrome Header */}
+            <div className="h-9 bg-slate-950/80 border-b border-slate-800/80 px-4 flex items-center justify-between text-xs text-slate-400">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
+                <span className="text-[11px] font-mono text-slate-400 ml-2">eventstormer.app — Collaborative DDD Engine</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-medium">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>14s Product Tour</span>
+              </div>
+            </div>
+
+            {/* Video Player */}
+            <div className="relative aspect-video w-full bg-slate-950">
+              <video
+                src="/videos/ad-promo.mp4"
+                autoPlay
+                loop
+                muted
+                playsInline
+                controls
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <div className="px-4 py-2.5 bg-slate-950/60 border-t border-slate-800/60 flex flex-wrap items-center justify-between text-[11px] text-slate-400">
+              <span>⚡ 0 Sign-in • Sub-5ms Cloudflare Durable Objects multiplayer • Strict Brandolini color grammar</span>
+              <span className="text-slate-500">Unmute anytime for audio</span>
+            </div>
+          </div>
+        </div>
 
         {/* Format Selector Cards */}
         <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4 w-full text-left max-w-4xl">
@@ -147,6 +187,48 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
               </div>
             );
           })}
+        </div>
+
+        {/* Variant Walkthrough Video Preview */}
+        <div className="mt-6 w-full max-w-4xl text-left bg-slate-900/40 border border-slate-800/80 rounded-2xl p-5 shadow-lg">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Film className="w-4 h-4 text-indigo-400" />
+              <h3 className="font-bold text-white text-sm">
+                {WORKSHOP_FORMATS[selectedFormat].title} — Facilitated Walkthrough (12s)
+              </h3>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-slate-400">
+              <span>Showing format:</span>
+              <span className="font-semibold text-indigo-300 uppercase tracking-wider">{selectedFormat}</span>
+            </div>
+          </div>
+
+          <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner">
+            <video
+              key={selectedFormat}
+              src={`/videos/${selectedFormat}.mp4`}
+              autoPlay
+              loop
+              muted
+              playsInline
+              controls
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Stages Breakdown for Selected Variant */}
+          <div className="mt-3.5 pt-3 border-t border-slate-800/60 flex flex-wrap items-center gap-2 text-[11px]">
+            <span className="text-slate-400 font-semibold">Methodology Stages:</span>
+            {WORKSHOP_FORMATS[selectedFormat].phases.map((ph, idx) => (
+              <span
+                key={ph.id}
+                className="px-2 py-0.5 rounded-md bg-slate-800/70 text-slate-300 border border-slate-700/50"
+              >
+                {idx + 1}. {ph.title}
+              </span>
+            ))}
+          </div>
         </div>
 
         {/* Bot Guard & Create Workspace CTA */}

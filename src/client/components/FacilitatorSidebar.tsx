@@ -61,7 +61,7 @@ export const FacilitatorSidebar: React.FC<FacilitatorSidebarProps> = ({
 
             return (
               <button
-                key={p.title}
+                key={p.id}
                 onClick={() => onPhaseChange(idx)}
                 className={`w-full text-left px-3 py-2 rounded-lg flex items-center gap-2.5 transition-all text-xs ${
                   isCurrent

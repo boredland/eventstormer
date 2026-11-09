@@ -262,6 +262,20 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       return Response.json({ success: true, state });
     }
 
+    if (url.pathname.endsWith('/set-format') && request.method === 'POST') {
+      const { format } = (await request.json()) as { format: WorkshopFormat };
+      this.ensureSchema();
+      const sql = this.ctx.storage.sql;
+      sql.exec(
+        `INSERT INTO workspace_state (key, value) VALUES ('format', ?)
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+        format
+      );
+      const state = this.getState();
+      this.broadcast({ type: 'workspace:reloaded', state });
+      return Response.json({ success: true, state });
+    }
+
     if (url.pathname.endsWith('/ws')) {
       if (request.headers.get('Upgrade') !== 'websocket') {
         return new Response('Expected Upgrade: websocket', { status: 426 });
@@ -521,21 +535,50 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       }
 
       case 'workspace:timer': {
+        const wasRunning =
+          sql
+            .exec<{ value: string }>(
+              `SELECT value FROM workspace_state WHERE key = 'timer_running'`
+            )
+            .toArray()[0]?.value === '1';
+        const prevSeconds = parseInt(
+          sql
+            .exec<{ value: string }>(
+              `SELECT value FROM workspace_state WHERE key = 'timer_seconds'`
+            )
+            .toArray()[0]?.value || '900',
+          10
+        );
+        const lastTick = parseInt(
+          sql
+            .exec<{ value: string }>(
+              `SELECT value FROM workspace_state WHERE key = 'timer_last_tick'`
+            )
+            .toArray()[0]?.value || '0',
+          10
+        );
+
+        let currentRemaining = prevSeconds;
+        if (wasRunning && lastTick > 0) {
+          const elapsed = Math.floor((Date.now() - lastTick) / 1000);
+          currentRemaining = Math.max(0, prevSeconds - elapsed);
+        }
+
+        const newRemaining =
+          parsed.secondsRemaining !== undefined ? parsed.secondsRemaining : currentRemaining;
         const isRunning = parsed.isRunning ? '1' : '0';
         const nowMs = Date.now().toString();
+
         sql.exec(
-          `INSERT INTO workspace_state (key, value) VALUES ('timer_running', ?), ('timer_last_tick', ?)
+          `INSERT INTO workspace_state (key, value) VALUES 
+            ('timer_running', ?), 
+            ('timer_last_tick', ?),
+            ('timer_seconds', ?)
            ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
           isRunning,
-          nowMs
+          nowMs,
+          newRemaining.toString()
         );
-        if (parsed.secondsRemaining !== undefined) {
-          sql.exec(
-            `INSERT INTO workspace_state (key, value) VALUES ('timer_seconds', ?)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-            parsed.secondsRemaining.toString()
-          );
-        }
         const state = this.getState();
         this.broadcast({
           type: 'workspace:updated',

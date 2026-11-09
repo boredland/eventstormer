@@ -39,8 +39,7 @@ export const SwimlaneItem: React.FC<SwimlaneItemProps> = ({
         width: '6000px',
         height: `${lane.height}px`,
       }}
-      onClick={(e) => onSelect(e, lane.id)}
-      className="group z-[-1] pointer-events-auto select-none"
+      className="group z-[-1] pointer-events-none select-none"
     >
       {/* Horizontal lane background zone with subtle tint */}
       <div
@@ -53,10 +52,16 @@ export const SwimlaneItem: React.FC<SwimlaneItemProps> = ({
 
       {/* Lane Title Header Tab on Left */}
       <div
-        className="absolute left-4 top-3 flex items-center gap-2 px-3 py-1.5 rounded-lg shadow-md border pointer-events-auto"
+        className="absolute left-4 top-3 flex items-center gap-2 px-3 py-1.5 rounded-lg shadow-md border pointer-events-auto cursor-grab active:cursor-grabbing"
         style={{
           backgroundColor: '#1e293b',
           borderColor: laneColor,
+        }}
+        onMouseDown={(e) => {
+          if (e.button !== 0) return;
+          const target = e.target as HTMLElement;
+          if (target.closest('button') || target.closest('input')) return;
+          onSelect(e, lane.id);
         }}
         onClick={(e) => e.stopPropagation()}
       >
