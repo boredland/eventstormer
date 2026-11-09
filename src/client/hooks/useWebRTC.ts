@@ -957,7 +957,6 @@ export function useWebRTC({
       try {
         const displayStream = await navigator.mediaDevices.getDisplayMedia({
           video: true,
-          audio: true,
         });
 
         screenStreamRef.current = displayStream;

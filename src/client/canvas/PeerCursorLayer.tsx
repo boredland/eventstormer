@@ -98,6 +98,7 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
         const hasVideo =
           remoteState?.stream &&
           !remoteState.isVideoOff &&
+          !remoteState.isScreenSharing &&
           remoteState.stream.getVideoTracks().length > 0 &&
           remoteState.stream.getVideoTracks().some((t) => t.enabled && t.readyState !== 'ended');
 
