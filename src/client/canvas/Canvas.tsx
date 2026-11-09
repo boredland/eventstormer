@@ -676,7 +676,7 @@ export const Canvas: React.FC<CanvasProps> = ({
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onDoubleClick={handleDoubleClick}
-      className={`relative w-full h-full overflow-hidden bg-slate-950 canvas-grid ${cursorClass}`}
+      className={`relative w-full h-full overflow-hidden bg-slate-950 canvas-grid select-none ${cursorClass}`}
     >
       {/* Zoomed & Panned Canvas Layer */}
       <div

@@ -353,7 +353,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+    <div className="fixed inset-0 flex flex-col h-screen w-screen overflow-hidden bg-slate-950 text-slate-100 select-none">
       {/* Zero Sign-in Join Modal if not configured */}
       <JoinModal
         isOpen={!hasPromptedJoin}
