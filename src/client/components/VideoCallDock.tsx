@@ -303,14 +303,14 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
 
   // Keep video streams connected to video elements
   useEffect(() => {
-    if (screenVideoRef.current && activeFeed) {
+    if (screenVideoRef.current && activeFeed && screenVideoRef.current.srcObject !== activeFeed.stream) {
       screenVideoRef.current.srcObject = activeFeed.stream;
       screenVideoRef.current.play().catch(() => {});
     }
   }, [activeFeed]);
 
   useEffect(() => {
-    if (fullscreenVideoRef.current && activeFeed && isFullscreen) {
+    if (fullscreenVideoRef.current && activeFeed && isFullscreen && fullscreenVideoRef.current.srcObject !== activeFeed.stream) {
       fullscreenVideoRef.current.srcObject = activeFeed.stream;
       fullscreenVideoRef.current.play().catch(() => {});
     }
@@ -372,6 +372,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
               ref={fullscreenVideoRef}
               autoPlay
               playsInline
+              muted
               className="max-h-full max-w-full object-contain rounded-lg shadow-2xl"
             />
           </div>
@@ -441,6 +442,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                 ref={screenVideoRef}
                 autoPlay
                 playsInline
+                muted
                 className="w-full h-full object-contain"
               />
             </div>
