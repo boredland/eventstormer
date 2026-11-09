@@ -93,6 +93,15 @@ export default {
         },
       });
     }
+    // Public config endpoint
+    if (url.pathname === '/api/config' && request.method === 'GET') {
+      return Response.json({
+        turnstileSiteKey: env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+        version: '0.1.0',
+        status: 'ok',
+      });
+    }
+
 
     // Provision new workspace
     if (url.pathname === '/api/workspaces' && request.method === 'POST') {
