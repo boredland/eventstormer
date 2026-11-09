@@ -8,18 +8,22 @@ import type {
 } from '../../shared/eventstorming';
 import { STICKY_DEFINITIONS } from '../../shared/eventstorming';
 import type { Viewport, DragState, MarqueeSelect, ActiveTool, UserProfile } from '../types';
+import type { RemotePeerState } from '../hooks/useWebRTC';
 import { StickyItem } from './StickyItem';
 import { PivotalLineItem } from './PivotalLineItem';
 import { SwimlaneItem } from './SwimlaneItem';
 import { PeerCursorLayer } from './PeerCursorLayer';
 import { Minimap } from './Minimap';
-import { ZoomIn, ZoomOut, Maximize2, Move } from 'lucide-react';
+import { ZoomIn, ZoomOut, Maximize2, Move, Eye, X } from 'lucide-react';
 
 interface CanvasProps {
   stickies: StickyNote[];
   pivotalLines: PivotalLine[];
   swimlanes: Swimlane[];
   peers: PeerCursor[];
+  remotePeers?: Map<string, RemotePeerState>;
+  followingClientId?: string | null;
+  onFollowPeer?: (clientId: string | null) => void;
   user: UserProfile;
   activeTool: ActiveTool;
   onSelectTool?: (tool: ActiveTool) => void;
@@ -45,6 +49,9 @@ export const Canvas: React.FC<CanvasProps> = ({
   pivotalLines,
   swimlanes,
   peers,
+  remotePeers,
+  followingClientId,
+  onFollowPeer,
   user,
   activeTool,
   onSelectTool,
@@ -91,6 +98,33 @@ export const Canvas: React.FC<CanvasProps> = ({
     window.addEventListener('resize', updateSize);
     return () => window.removeEventListener('resize', updateSize);
   }, []);
+
+  // Follow Mode: sync viewport to followed peer's cursor position
+  useEffect(() => {
+    if (!followingClientId) return;
+
+    const followedPeer = peers.find((p) => p.clientId === followingClientId);
+    if (!followedPeer) {
+      onFollowPeer?.(null);
+      return;
+    }
+
+    if (dimensions.width > 0 && dimensions.height > 0) {
+      const targetX = dimensions.width / (2 * viewport.zoom) - followedPeer.x;
+      const targetY = dimensions.height / (2 * viewport.zoom) - followedPeer.y;
+
+      setViewport((prev) => {
+        const dx = targetX - prev.x;
+        const dy = targetY - prev.y;
+        if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return prev;
+        return {
+          ...prev,
+          x: targetX,
+          y: targetY,
+        };
+      });
+    }
+  }, [followingClientId, peers, dimensions, viewport.zoom, onFollowPeer]);
 
   // Screen to World coords
   const screenToWorld = useCallback(
@@ -142,6 +176,7 @@ export const Canvas: React.FC<CanvasProps> = ({
         zoomAtPoint(e.clientX, e.clientY, viewport.zoom * (1 + zoomDelta));
       } else {
         // Trackpad 2-finger pan or regular wheel
+        onFollowPeer?.(null);
         setViewport((prev) => ({
           ...prev,
           x: prev.x - e.deltaX / prev.zoom,
@@ -163,6 +198,11 @@ export const Canvas: React.FC<CanvasProps> = ({
 
       if (e.code === 'Space' && !e.repeat) {
         setIsSpacePressed(true);
+        onFollowPeer?.(null);
+      }
+
+      if (e.key === 'Escape') {
+        onFollowPeer?.(null);
       }
 
       // Undo / Redo
@@ -304,6 +344,7 @@ export const Canvas: React.FC<CanvasProps> = ({
 
     if (e.button === 1 || isSpacePressed || activeTool === 'pan') {
       // Middle click or Space/Pan drag
+      onFollowPeer?.(null);
       e.preventDefault();
       setDragState({
         type: 'pan',
@@ -771,7 +812,13 @@ export const Canvas: React.FC<CanvasProps> = ({
         ))}
 
         {/* Peer Cursors */}
-        <PeerCursorLayer peers={peers} />
+        {/* Peer Cursors with Webcams and Follow trigger */}
+        <PeerCursorLayer
+          peers={peers}
+          remotePeers={remotePeers}
+          followingClientId={followingClientId}
+          onFollowPeer={onFollowPeer}
+        />
       </div>
 
       {/* Marquee Selection Rectangle Box */}
@@ -786,6 +833,27 @@ export const Canvas: React.FC<CanvasProps> = ({
           }}
           className="border border-indigo-400 bg-indigo-500/20 rounded pointer-events-none z-30"
         />
+      )}
+      {/* Follow Mode Status Pill */}
+      {followingClientId && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40 bg-indigo-600/90 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-2xl backdrop-blur-md flex items-center gap-2 border border-indigo-400/40 animate-fade-in pointer-events-auto">
+          <Eye className="w-3.5 h-3.5 animate-pulse text-emerald-300" />
+          <span>
+            Following{' '}
+            <b className="text-white">
+              {peers.find((p) => p.clientId === followingClientId)?.name || 'Participant'}
+            </b>
+          </span>
+          <button
+            type="button"
+            onClick={() => onFollowPeer?.(null)}
+            className="ml-1 px-1.5 py-0.5 rounded-full bg-indigo-800 hover:bg-indigo-700 text-[11px] text-white flex items-center gap-0.5 transition-colors cursor-pointer"
+            title="Stop following"
+          >
+            <X className="w-3 h-3" />
+            <span>Stop</span>
+          </button>
+        </div>
       )}
 
       {/* Floating Canvas Zoom & View Controls (Bottom Left) */}

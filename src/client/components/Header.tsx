@@ -15,6 +15,7 @@ import {
   Users,
   Compass,
   Video,
+  Eye,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -42,6 +43,8 @@ interface HeaderProps {
   isCallConnecting?: boolean;
   callParticipantCount?: number;
   onToggleCall?: () => void;
+  followingClientId?: string | null;
+  onFollowPeer?: (clientId: string | null) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -69,6 +72,8 @@ export const Header: React.FC<HeaderProps> = ({
   isCallConnecting = false,
   callParticipantCount = 0,
   onToggleCall,
+  followingClientId,
+  onFollowPeer,
 }) => {
   const [copied, setCopied] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(timerSecondsRemaining);
@@ -337,20 +342,40 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Remote Peers */}
-          {peers.slice(0, 4).map((p) => (
-            <div
-              key={p.clientId}
-              style={{ backgroundColor: p.color }}
-              className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white ring-2 ring-slate-900 shadow-sm"
-              title={p.name}
-            >
-              {p.name.charAt(0).toUpperCase()}
-            </div>
-          ))}
+          {peers.slice(0, 5).map((p) => {
+            const isFollowing = followingClientId === p.clientId;
+            return (
+              <button
+                key={p.clientId}
+                type="button"
+                onClick={() => onFollowPeer?.(isFollowing ? null : p.clientId)}
+                className={`relative transition-transform cursor-pointer ${
+                  isFollowing ? 'scale-110 z-10' : 'hover:scale-105'
+                }`}
+                title={isFollowing ? `Following ${p.name} (Click to stop)` : `Click to follow ${p.name}`}
+              >
+                <div
+                  style={{ backgroundColor: p.color }}
+                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm transition-all ${
+                    isFollowing
+                      ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
+                      : 'ring-2 ring-slate-900 hover:ring-indigo-400'
+                  }`}
+                >
+                  {p.name.charAt(0).toUpperCase()}
+                </div>
+                {isFollowing && (
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-indigo-600 border border-slate-900 flex items-center justify-center text-white">
+                    <Eye className="w-2 h-2" />
+                  </span>
+                )}
+              </button>
+            );
+          })}
 
-          {peers.length > 4 && (
+          {peers.length > 5 && (
             <div className="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-semibold text-slate-300 ring-2 ring-slate-900">
-              +{peers.length - 4}
+              +{peers.length - 5}
             </div>
           )}
         </div>

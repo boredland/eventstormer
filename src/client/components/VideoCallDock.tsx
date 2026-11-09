@@ -16,6 +16,7 @@ import {
   X,
   Settings,
   Monitor,
+  Eye,
 } from 'lucide-react';
 import type { RemotePeerState } from '../hooks/useWebRTC';
 import type { UserProfile } from '../types';
@@ -44,6 +45,8 @@ interface VideoCallDockProps {
   selectedVideoDeviceId?: string | null;
   onSwitchAudioDevice?: (deviceId: string) => void;
   onSwitchVideoDevice?: (deviceId: string) => void;
+  followingClientId?: string | null;
+  onFollowPeer?: (clientId: string | null) => void;
 }
 interface VideoBubbleProps {
   stream: MediaStream | null;
@@ -188,6 +191,8 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
   selectedVideoDeviceId,
   onSwitchAudioDevice,
   onSwitchVideoDevice,
+  followingClientId,
+  onFollowPeer,
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isScreenViewerExpanded, setIsScreenViewerExpanded] = useState(true);
@@ -573,29 +578,54 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
               />
 
               {/* Remote Participants Bubbles */}
-              {remotePeerList.map((remote) => (
-                <VideoBubble
-                  key={remote.clientId}
-                  stream={remote.stream}
-                  name={remote.peer?.name || `Stormer ${remote.clientId.slice(0, 4)}`}
-                  color={remote.peer?.color || '#3b82f6'}
-                  isSpeaking={remote.isSpeaking}
-                  isMuted={remote.isMuted}
-                  isVideoOff={remote.isVideoOff}
-                  isScreenSharing={remote.isScreenSharing}
-                  isPinned={
-                    selectedFeedId === remote.clientId ||
-                    selectedFeedId === `remote-screen-${remote.clientId}`
-                  }
-                  onClick={() => {
-                    const targetId = remote.isScreenSharing
-                      ? `remote-screen-${remote.clientId}`
-                      : remote.clientId;
-                    setSelectedFeedId(selectedFeedId === targetId ? null : targetId);
-                    setIsScreenViewerExpanded(true);
-                  }}
-                />
-              ))}
+              {remotePeerList.map((remote) => {
+                const isFollowing = followingClientId === remote.clientId;
+                return (
+                  <div key={remote.clientId} className="relative group/bubble">
+                    <VideoBubble
+                      stream={remote.stream}
+                      name={remote.peer?.name || `Stormer ${remote.clientId.slice(0, 4)}`}
+                      color={remote.peer?.color || '#3b82f6'}
+                      isSpeaking={remote.isSpeaking}
+                      isMuted={remote.isMuted}
+                      isVideoOff={remote.isVideoOff}
+                      isScreenSharing={remote.isScreenSharing}
+                      isPinned={
+                        selectedFeedId === remote.clientId ||
+                        selectedFeedId === `remote-screen-${remote.clientId}`
+                      }
+                      onClick={() => {
+                        const targetId = remote.isScreenSharing
+                          ? `remote-screen-${remote.clientId}`
+                          : remote.clientId;
+                        setSelectedFeedId(selectedFeedId === targetId ? null : targetId);
+                        setIsScreenViewerExpanded(true);
+                      }}
+                    />
+                    {onFollowPeer && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onFollowPeer(isFollowing ? null : remote.clientId);
+                        }}
+                        className={`absolute -top-1 -left-1 p-1 rounded-full shadow border border-slate-900 transition-all ${
+                          isFollowing
+                            ? 'bg-indigo-600 text-white ring-2 ring-indigo-400'
+                            : 'bg-slate-800 text-slate-300 opacity-0 group-hover/bubble:opacity-100 hover:text-white hover:bg-slate-700'
+                        }`}
+                        title={
+                          isFollowing
+                            ? `Following ${remote.peer?.name || 'Attendee'} (click to stop)`
+                            : `Follow ${remote.peer?.name || 'Attendee'}`
+                        }
+                      >
+                        <Eye className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           )}
 

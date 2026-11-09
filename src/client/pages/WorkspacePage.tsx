@@ -100,7 +100,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [isHelpOpen, setIsHelpOpen] = useState(false);
   const [currentBreakoutRoomId, setCurrentBreakoutRoomId] = useState<string | null>(null);
   const [isBreakoutModalOpen, setIsBreakoutModalOpen] = useState(false);
-
+  const [followingClientId, setFollowingClientId] = useState<string | null>(null);
   // Undo / Redo engine
   const { pushSnapshot, setPresent, undo, redo } = useUndoRedo({
     stickies: state.stickies,
@@ -492,6 +492,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         isCallConnecting={webrtc.isConnecting}
         callParticipantCount={webrtc.participantCount}
         onToggleCall={webrtc.isCallActive ? webrtc.leaveCall : webrtc.startCall}
+        followingClientId={followingClientId}
+        onFollowPeer={setFollowingClientId}
       />
 
       {/* Floating P2P WebRTC Video Call Dock */}
@@ -519,6 +521,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         selectedVideoDeviceId={webrtc.selectedVideoDeviceId}
         onSwitchAudioDevice={webrtc.switchAudioDevice}
         onSwitchVideoDevice={webrtc.switchVideoDevice}
+        followingClientId={followingClientId}
+        onFollowPeer={setFollowingClientId}
       />
       {/* Breakout Active Bar */}
       {state.breakoutSession?.active && (
@@ -546,6 +550,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
               ? peers.filter((p) => p.breakoutRoomId === currentBreakoutRoomId)
               : peers
           }
+          remotePeers={webrtc.remotePeers}
+          followingClientId={followingClientId}
+          onFollowPeer={setFollowingClientId}
           user={user}
           activeTool={activeTool}
           onSelectTool={(tool) => setActiveTool(tool)}
