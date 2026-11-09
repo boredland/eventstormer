@@ -123,7 +123,7 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
     !isVideoOff &&
     !!stream &&
     stream.getVideoTracks().length > 0 &&
-    stream.getVideoTracks().some((t) => t.enabled);
+    stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live' && !t.muted);
 
   return (
     <div

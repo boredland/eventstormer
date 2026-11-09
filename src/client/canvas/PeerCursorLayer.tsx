@@ -90,7 +90,7 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
           remoteState?.stream &&
           !remoteState.isVideoOff &&
           remoteState.stream.getVideoTracks().length > 0 &&
-          remoteState.stream.getVideoTracks().some((t) => t.enabled);
+          remoteState.stream.getVideoTracks().some((t) => t.enabled && t.readyState === 'live' && !t.muted);
 
         return (
           <div
@@ -106,7 +106,7 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
             {/* Webcam / Round Avatar Bubble centered above name tag */}
             <div
               onClick={() => onFollowPeer?.(isFollowingThisPeer ? null : peer.clientId)}
-              className={`relative mb-1 rounded-full overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] pointer-events-auto cursor-pointer shadow-xl ${
+              className={`relative mb-1 rounded-full transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] pointer-events-auto cursor-pointer shadow-xl ${
                 getAuraClasses(remoteState?.videoEffect?.aura, remoteState?.isSpeaking)
               } ${
                 isFollowingThisPeer
@@ -120,19 +120,21 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
                   : `Click to follow ${peer.name}`
               }
             >
-              {hasVideo && remoteState ? (
-                <PeerVideoElement
-                  stream={remoteState.stream}
-                  filterCss={getFilterCss(remoteState.videoEffect?.filter)}
-                />
-              ) : (
-                <div
-                  className="w-full h-full flex items-center justify-center font-bold text-white text-xs sm:text-sm"
-                  style={{ backgroundColor: peer.color }}
-                >
-                  {initials}
-                </div>
-              )}
+              <div className="absolute inset-0 rounded-full overflow-hidden">
+                {hasVideo && remoteState ? (
+                  <PeerVideoElement
+                    stream={remoteState.stream}
+                    filterCss={getFilterCss(remoteState.videoEffect?.filter)}
+                  />
+                ) : (
+                  <div
+                    className="w-full h-full flex items-center justify-center font-bold text-white text-xs sm:text-sm"
+                    style={{ backgroundColor: peer.color }}
+                  >
+                    {initials}
+                  </div>
+                )}
+              </div>
 
               {/* Screenshare badge */}
               {remoteState?.isScreenSharing && (
