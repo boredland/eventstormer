@@ -292,7 +292,8 @@ export function useWebRTC({
       setRemotePeers((prev) => {
         const next = new Map(prev);
         const existingPeer = next.get(peerId);
-        const stream = existingPeer?.stream || remoteStream;
+        // Always prefer event.streams[0] (browser-managed) so replaceTrack propagates to video elements
+        const stream = event.streams[0] || existingPeer?.stream || remoteStream;
 
         // Ensure track is in stream
         if (!stream.getTracks().some((t) => t.id === event.track.id)) {
@@ -925,6 +926,9 @@ export function useWebRTC({
             const videoSender = senders.find((s) => s.track?.kind === 'video');
             if (videoSender) {
               videoSender.replaceTrack(screenVideoTrack).catch(() => {});
+            } else if (screenStreamRef.current) {
+              // No video sender (listen-only mode) — add the screen track as a new sender
+              try { pc.addTrack(screenVideoTrack, screenStreamRef.current); } catch {}
             }
           }
 

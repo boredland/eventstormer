@@ -66,12 +66,12 @@ export const PeerCursorLayer: React.FC<PeerCursorLayerProps> = ({
               top: `${peer.y}px`,
               transition: 'left var(--duration-micro) var(--ease-linear), top var(--duration-micro) var(--ease-linear)',
             }}
-            className="flex flex-col items-start -translate-x-1.5 -translate-y-1.5 select-none"
+            className="flex flex-col items-center -translate-x-1.5 -translate-y-1.5 select-none"
           >
-            {/* Webcam / Round Avatar Bubble above cursor */}
+            {/* Webcam / Round Avatar Bubble centered above name tag */}
             <div
               onClick={() => onFollowPeer?.(isFollowingThisPeer ? null : peer.clientId)}
-              className={`relative -ml-2 mb-1 rounded-full overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] pointer-events-auto cursor-pointer shadow-xl ${
+              className={`relative mb-1 rounded-full overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] pointer-events-auto cursor-pointer shadow-xl ${
                 getAuraClasses(remoteState?.videoEffect?.aura, remoteState?.isSpeaking)
               } ${
                 isFollowingThisPeer
