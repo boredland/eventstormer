@@ -96,7 +96,7 @@ export default {
     // Public config endpoint
     if (url.pathname === '/api/config' && request.method === 'GET') {
       return Response.json({
-        turnstileSiteKey: env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA',
+        turnstileSiteKey: env.TURNSTILE_SITE_KEY || '0x4AAAAAAF5ucgmkfKdOVogj',
         version: '0.1.0',
         status: 'ok',
       });
@@ -174,14 +174,6 @@ export default {
           });
         }
 
-        const turnstileToken =
-          url.searchParams.get('turnstileToken') ||
-          request.headers.get('cf-turnstile-response');
-
-        const isHuman = await verifyTurnstileToken(turnstileToken, ip, env.TURNSTILE_SECRET_KEY);
-        if (!isHuman) {
-          return new Response('Bot protection challenge failed', { status: 403 });
-        }
 
         // Pass to Durable Object
         return roomStub.fetch(request);

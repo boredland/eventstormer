@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import type { WorkshopFormat } from '../../shared/eventstorming';
 import { WORKSHOP_FORMATS, SAMPLE_TEMPLATES } from '../../shared/eventstorming';
@@ -7,21 +7,41 @@ import { Sparkles, ArrowRight, ShieldCheck, Zap, Users, Compass, Timer, Vote } f
 interface LandingPageProps {
   onNavigateToWorkspace: (workspaceId: string, templateKey?: string) => void;
 }
+const isDev = Boolean((import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV);
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace }) => {
   const [selectedFormat, setSelectedFormat] = useState<WorkshopFormat>('big-picture');
-  const [turnstileToken, setTurnstileToken] = useState<string>('XXXX.DUMMY.TOKEN.XXXX');
+  const [turnstileToken, setTurnstileToken] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Cloudflare always-pass dummy key for testing/dev if none provided
-  const siteKey =
-    (import.meta as unknown as { env: { VITE_TURNSTILE_SITE_KEY?: string } }).env.VITE_TURNSTILE_SITE_KEY ||
-    '1x00000000000000000000AA';
+  // Turnstile site key dynamically fetched from server config or fallback
+  const [siteKey, setSiteKey] = useState<string>(
+    () =>
+      (import.meta as unknown as { env: { VITE_TURNSTILE_SITE_KEY?: string } }).env
+        .VITE_TURNSTILE_SITE_KEY || '0x4AAAAAAF5ucgmkfKdOVogj'
+  );
+
+  useEffect(() => {
+    fetch('/api/config')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((cfg: { turnstileSiteKey?: string } | null) => {
+        if (cfg?.turnstileSiteKey) {
+          setSiteKey(cfg.turnstileSiteKey);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleCreateWorkspace = async (templateKey?: string) => {
     setIsLoading(true);
     setErrorMessage(null);
+
+    if (!turnstileToken && !isDev) {
+      setErrorMessage('Please complete the security check below before creating a workspace.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const res = await fetch('/api/workspaces', {
@@ -42,9 +62,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
       onNavigateToWorkspace(data.id, templateKey);
     } catch (err) {
       console.error('Failed to create workspace:', err);
-      // If offline/worker proxy fallback for direct development
-      const fallbackId = `storm-${Math.floor(100 + Math.random() * 900)}`;
-      onNavigateToWorkspace(fallbackId, templateKey);
+      if (isDev) {
+        // Offline development fallback
+        const fallbackId = `storm-${Math.floor(100 + Math.random() * 900)}`;
+        onNavigateToWorkspace(fallbackId, templateKey);
+      } else {
+        setErrorMessage(
+          err instanceof Error
+            ? err.message
+            : 'Failed to create workspace. Please verify the security check.'
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -126,10 +154,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
           <div className="my-2">
             <Turnstile
               siteKey={siteKey}
-              onSuccess={(token) => setTurnstileToken(token)}
+              onSuccess={(token) => {
+                setTurnstileToken(token);
+                setErrorMessage(null);
+              }}
+              onExpire={() => setTurnstileToken('')}
               onError={() => {
-                // In dev or offline environments, retain dummy fallback
-                setTurnstileToken('1x00000000000000000000AA');
+                if (isDev) {
+                  setTurnstileToken('1x00000000000000000000AA');
+                }
               }}
             />
           </div>
