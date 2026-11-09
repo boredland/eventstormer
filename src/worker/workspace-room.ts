@@ -20,6 +20,7 @@ interface SocketAttachment {
   color: string;
   windowStart: number;
   messageCount: number;
+  lastSeen: number;
   breakoutRoomId?: string;
   webrtcInCall?: boolean;
   webrtcRoomId?: string | null;
@@ -315,6 +316,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
         color: '#FF9F1C',
         windowStart: Date.now(),
         messageCount: 0,
+        lastSeen: Date.now(),
       } satisfies SocketAttachment);
 
       return new Response(null, { status: 101, webSocket: client });
@@ -351,6 +353,20 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
     }
 
     this.touchActivity();
+
+    // Update lastSeen for this socket and force-close stale peers (60s silence = dead tab)
+    if (att) {
+      att.lastSeen = Date.now();
+      ws.serializeAttachment(att);
+    }
+    const nowCheck = Date.now();
+    for (const staleWs of this.ctx.getWebSockets()) {
+      const staleAtt = staleWs.deserializeAttachment() as SocketAttachment | null;
+      if (staleAtt?.clientId && staleAtt.lastSeen && nowCheck - staleAtt.lastSeen > 60_000) {
+        try { staleWs.close(1001, 'Stale connection: no activity for 60s'); } catch {}
+      }
+    }
+
     const sql = this.ctx.storage.sql;
 
     switch (parsed.type) {
@@ -361,6 +377,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
           color: parsed.color,
           windowStart: now,
           messageCount: att?.messageCount || 0,
+          lastSeen: now,
         };
         ws.serializeAttachment(clientAttachment);
 

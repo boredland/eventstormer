@@ -107,6 +107,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [currentBreakoutRoomId, setCurrentBreakoutRoomId] = useState<string | null>(null);
   const [isBreakoutModalOpen, setIsBreakoutModalOpen] = useState(false);
   const [followingClientId, setFollowingClientId] = useState<string | null>(null);
+  const [removedPeers, setRemovedPeers] = useState<Set<string>>(new Set());
   // Undo / Redo engine
   const { pushSnapshot, setPresent, undo, redo } = useUndoRedo({
     stickies: state.stickies,
@@ -160,6 +161,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       setCurrentBreakoutRoomId(null);
     }
   }, [state.breakoutSession?.active, currentBreakoutRoomId]);
+
+  // Filter out manually removed peers from display
+  const visiblePeers = peers.filter((p) => !removedPeers.has(p.clientId));
 
   // Mutations
   const handleUpsertSticky = useCallback(
@@ -476,7 +480,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       <Header
         workspaceId={workspaceId}
         format={state.format}
-        peers={peers}
+        peers={visiblePeers}
         user={user}
         timerIsRunning={state.timerIsRunning}
         timerSecondsRemaining={state.timerSecondsRemaining}
@@ -500,6 +504,10 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onToggleCall={webrtc.isCallActive ? webrtc.leaveCall : webrtc.startCall}
         followingClientId={followingClientId}
         onFollowPeer={setFollowingClientId}
+        onRemovePeer={(clientId) => {
+          setRemovedPeers((prev) => new Set([...prev, clientId]));
+          if (followingClientId === clientId) setFollowingClientId(null);
+        }}
       />
 
       {/* Floating P2P WebRTC Video Call Dock */}

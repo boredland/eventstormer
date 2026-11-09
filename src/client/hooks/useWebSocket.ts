@@ -30,6 +30,8 @@ export function useWebSocket({
   const socketRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const lastCursorSendRef = useRef<number>(0);
+  const heartbeatRef = useRef<number | null>(null);
+  const lastCursorPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const onServerMessageRef = useRef(onServerMessage);
   onServerMessageRef.current = onServerMessage;
   const sendMessage = useCallback((msg: ClientMessage) => {
@@ -39,6 +41,7 @@ export function useWebSocket({
   }, []);
 
   const sendCursor = useCallback((x: number, y: number) => {
+    lastCursorPosRef.current = { x, y };
     const now = Date.now();
     // Throttle cursor messages to 30fps (approx 33ms)
     if (now - lastCursorSendRef.current < 33) return;
@@ -63,6 +66,17 @@ export function useWebSocket({
       ws.onopen = () => {
         if (unmounted) return;
         setIsConnected(true);
+
+        // Heartbeat: send cursor every 20s to keep server-side lastSeen fresh
+        // (prevents 60s stale-peer disconnect during presentations/passive viewing)
+        if (heartbeatRef.current) window.clearInterval(heartbeatRef.current);
+        heartbeatRef.current = window.setInterval(() => {
+          if (socketRef.current?.readyState === WebSocket.OPEN) {
+            const { x, y } = lastCursorPosRef.current;
+            socketRef.current.send(JSON.stringify({ type: 'cursor', clientId: user.clientId, x, y }));
+          }
+        }, 20_000);
+
         // Send join packet
         ws.send(
           JSON.stringify({
@@ -276,6 +290,10 @@ export function useWebSocket({
 
     return () => {
       unmounted = true;
+      if (heartbeatRef.current) {
+        window.clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
       if (reconnectTimeoutRef.current) {
         window.clearTimeout(reconnectTimeoutRef.current);
       }

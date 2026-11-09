@@ -16,6 +16,7 @@ import {
   Compass,
   Video,
   Eye,
+  X,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -45,6 +46,7 @@ interface HeaderProps {
   onToggleCall?: () => void;
   followingClientId?: string | null;
   onFollowPeer?: (clientId: string | null) => void;
+  onRemovePeer?: (clientId: string) => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -74,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleCall,
   followingClientId,
   onFollowPeer,
+  onRemovePeer,
 }) => {
   const [copied, setCopied] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(timerSecondsRemaining);
@@ -345,31 +348,42 @@ export const Header: React.FC<HeaderProps> = ({
           {peers.slice(0, 5).map((p) => {
             const isFollowing = followingClientId === p.clientId;
             return (
-              <button
-                key={p.clientId}
-                type="button"
-                onClick={() => onFollowPeer?.(isFollowing ? null : p.clientId)}
-                className={`relative transition-transform cursor-pointer ${
-                  isFollowing ? 'scale-110 z-10' : 'hover:scale-105'
-                }`}
-                title={isFollowing ? `Following ${p.name} (Click to stop)` : `Click to follow ${p.name}`}
-              >
-                <div
-                  style={{ backgroundColor: p.color }}
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm transition-all ${
-                    isFollowing
-                      ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
-                      : 'ring-2 ring-slate-900 hover:ring-indigo-400'
+              <div key={p.clientId} className="relative group/avatar">
+                <button
+                  type="button"
+                  onClick={() => onFollowPeer?.(isFollowing ? null : p.clientId)}
+                  className={`relative transition-transform cursor-pointer ${
+                    isFollowing ? 'scale-110 z-10' : 'hover:scale-105'
                   }`}
+                  title={isFollowing ? `Following ${p.name} (Click to stop)` : `Click to follow ${p.name}`}
                 >
-                  {p.name.charAt(0).toUpperCase()}
-                </div>
-                {isFollowing && (
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-indigo-600 border border-slate-900 flex items-center justify-center text-white">
-                    <Eye className="w-2 h-2" />
-                  </span>
+                  <div
+                    style={{ backgroundColor: p.color }}
+                    className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm transition-all ${
+                      isFollowing
+                        ? 'ring-2 ring-indigo-400 ring-offset-2 ring-offset-slate-900'
+                        : 'ring-2 ring-slate-900 hover:ring-indigo-400'
+                    }`}
+                  >
+                    {p.name.charAt(0).toUpperCase()}
+                  </div>
+                  {isFollowing && (
+                    <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-indigo-600 border border-slate-900 flex items-center justify-center text-white">
+                      <Eye className="w-2 h-2" />
+                    </span>
+                  )}
+                </button>
+                {onRemovePeer && (
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onRemovePeer(p.clientId); }}
+                    className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-rose-600 border border-slate-900 text-white opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center hover:bg-rose-500 z-20 cursor-pointer"
+                    title={`Remove ${p.name} from the board`}
+                  >
+                    <X className="w-2 h-2" />
+                  </button>
                 )}
-              </button>
+              </div>
             );
           })}
 
