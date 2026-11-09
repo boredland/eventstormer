@@ -17,10 +17,19 @@ import {
   Settings,
   Monitor,
   Eye,
+  Sparkles,
 } from 'lucide-react';
 import type { RemotePeerState } from '../hooks/useWebRTC';
 import type { UserProfile } from '../types';
 import type { BreakoutRoom } from '../../shared/eventstorming';
+import type { VideoEffect } from '../utils/videoEffects';
+import {
+  VIDEO_FILTERS,
+  VIDEO_AURAS,
+  FUN_REACTIONS,
+  getFilterCss,
+  getAuraClasses,
+} from '../utils/videoEffects';
 interface VideoCallDockProps {
   isCallActive: boolean;
   isMuted: boolean;
@@ -47,6 +56,8 @@ interface VideoCallDockProps {
   onSwitchVideoDevice?: (deviceId: string) => void;
   followingClientId?: string | null;
   onFollowPeer?: (clientId: string | null) => void;
+  localVideoEffect?: VideoEffect;
+  onSetVideoEffect?: (effect: VideoEffect) => void;
 }
 interface VideoBubbleProps {
   stream: MediaStream | null;
@@ -58,6 +69,7 @@ interface VideoBubbleProps {
   isVideoOff: boolean;
   isScreenSharing?: boolean;
   isPinned?: boolean;
+  videoEffect?: VideoEffect;
   onClick?: () => void;
 }
 
@@ -71,6 +83,7 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
   isVideoOff,
   isScreenSharing = false,
   isPinned = false,
+  videoEffect,
   onClick,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -107,12 +120,12 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
       } (Click to expand feed)`}
     >
       <div
-        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden transition-all duration-200 select-none ${
-          isSpeaking
-            ? 'ring-4 ring-emerald-400 ring-offset-2 ring-offset-slate-900 shadow-[0_0_16px_rgba(52,211,153,0.7)] scale-105'
-            : isPinned
-            ? 'ring-4 ring-indigo-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_16px_rgba(99,102,241,0.7)]'
-            : 'ring-2 ring-slate-700/80 hover:ring-indigo-400 shadow-xl'
+        className={`relative w-14 h-14 sm:w-16 sm:h-16 rounded-full overflow-hidden transition-all duration-[var(--duration-fast)] ease-[var(--ease-smooth-out)] select-none ${
+          getAuraClasses(videoEffect?.aura, isSpeaking)
+        } ${
+          isPinned
+            ? 'ring-4 ring-indigo-500 ring-offset-2 ring-offset-slate-900 shadow-[0_0_16px_rgba(99,102,241,0.8)]'
+            : 'hover:scale-105'
         }`}
         style={{
           backgroundColor: hasVideoTrack ? '#0f172a' : color,
@@ -124,7 +137,8 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
           autoPlay
           playsInline
           muted={isLocal}
-          className={`w-full h-full object-cover transition-opacity duration-200 ${
+          style={{ filter: getFilterCss(videoEffect?.filter) }}
+          className={`w-full h-full object-cover transition-opacity duration-[var(--duration-quick)] ${
             hasVideoTrack ? 'opacity-100' : 'opacity-0 absolute inset-0 pointer-events-none'
           } ${isLocal ? 'scale-x-[-1]' : ''}`}
         />
@@ -152,6 +166,12 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
           </div>
         )}
 
+        {/* Reaction badge */}
+        {videoEffect?.reaction && (
+          <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 text-sm filter drop-shadow animate-float pointer-events-none select-none z-20">
+            {videoEffect.reaction}
+          </span>
+        )}
         {/* Muted badge */}
         {isMuted && (
           <div className="absolute bottom-0.5 right-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-rose-600 border border-slate-900 flex items-center justify-center text-white shadow-md">
@@ -193,11 +213,14 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
   onSwitchVideoDevice,
   followingClientId,
   onFollowPeer,
+  localVideoEffect,
+  onSetVideoEffect,
 }) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isScreenViewerExpanded, setIsScreenViewerExpanded] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isEffectsOpen, setIsEffectsOpen] = useState(false);
   const [selectedFeedId, setSelectedFeedId] = useState<string | null>(null);
   const screenVideoRef = useRef<HTMLVideoElement | null>(null);
   const fullscreenVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -540,6 +563,136 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
             </div>
           )}
 
+          {/* Around.co Video Effects Panel */}
+          {isEffectsOpen && !isMinimized && (
+            <div className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-xl flex flex-col gap-2.5 text-xs animate-in fade-in zoom-in-95 duration-[var(--duration-fast)]">
+              <div className="flex items-center justify-between text-slate-200 font-semibold border-b border-slate-800/80 pb-1.5">
+                <span className="flex items-center gap-1.5 text-pink-300">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Around Webcam Effects
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEffectsOpen(false)}
+                  className="p-0.5 text-slate-400 hover:text-white rounded"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Filters */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-slate-400">Webcam Filter</span>
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-1">
+                  {VIDEO_FILTERS.map((f) => {
+                    const isSelected = (localVideoEffect?.filter || 'none') === f.id;
+                    return (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() =>
+                          onSetVideoEffect?.({
+                            filter: f.id,
+                            aura: localVideoEffect?.aura || 'none',
+                            reaction: localVideoEffect?.reaction || null,
+                          })
+                        }
+                        className={`px-2 py-1 rounded-lg text-[11px] flex items-center justify-center gap-1 transition-all duration-[var(--duration-quick)] ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white font-bold ring-1 ring-indigo-400 shadow-sm'
+                            : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                        }`}
+                        title={f.description}
+                      >
+                        <span>{f.emoji}</span>
+                        <span className="truncate">{f.label.split(' ')[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Auras */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-slate-400">Aura Glow Ring</span>
+                <div className="grid grid-cols-3 gap-1">
+                  {VIDEO_AURAS.map((a) => {
+                    const isSelected = (localVideoEffect?.aura || 'none') === a.id;
+                    return (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() =>
+                          onSetVideoEffect?.({
+                            filter: localVideoEffect?.filter || 'none',
+                            aura: a.id,
+                            reaction: localVideoEffect?.reaction || null,
+                          })
+                        }
+                        className={`px-2 py-1 rounded-lg text-[11px] flex items-center justify-center gap-1 transition-all duration-[var(--duration-quick)] ${
+                          isSelected
+                            ? 'bg-pink-600 text-white font-bold ring-1 ring-pink-400 shadow-sm'
+                            : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+                        }`}
+                        title={a.description}
+                      >
+                        <span>{a.emoji}</span>
+                        <span className="truncate">{a.label.split(' ')[0]}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Reaction Badges */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[11px] font-medium text-slate-400">Floating Reaction Badge</span>
+                <div className="flex items-center flex-wrap gap-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onSetVideoEffect?.({
+                        filter: localVideoEffect?.filter || 'none',
+                        aura: localVideoEffect?.aura || 'none',
+                        reaction: null,
+                      })
+                    }
+                    className={`px-2 py-0.5 rounded text-[10px] ${
+                      !localVideoEffect?.reaction
+                        ? 'bg-slate-700 text-white font-bold'
+                        : 'bg-slate-900 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Off
+                  </button>
+                  {FUN_REACTIONS.map((emoji) => {
+                    const isSelected = localVideoEffect?.reaction === emoji;
+                    return (
+                      <button
+                        key={emoji}
+                        type="button"
+                        onClick={() =>
+                          onSetVideoEffect?.({
+                            filter: localVideoEffect?.filter || 'none',
+                            aura: localVideoEffect?.aura || 'none',
+                            reaction: emoji,
+                          })
+                        }
+                        className={`w-6 h-6 rounded flex items-center justify-center text-sm transition-transform duration-[var(--duration-quick)] ${
+                          isSelected
+                            ? 'bg-indigo-600/80 scale-125 ring-1 ring-indigo-400'
+                            : 'hover:scale-110 hover:bg-slate-800'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Media notice for listen-only or permission denial */}
           {mediaNotice && !isMinimized && (
             <div className="w-full bg-amber-500/15 border border-amber-500/30 text-amber-200 text-[11px] px-2.5 py-1.5 rounded-xl flex items-center justify-between gap-2">
@@ -571,6 +724,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                 isVideoOff={isVideoOff}
                 isScreenSharing={isScreenSharing}
                 isPinned={selectedFeedId === 'local'}
+                videoEffect={localVideoEffect}
                 onClick={() => {
                   setSelectedFeedId(selectedFeedId === 'local' ? null : 'local');
                   setIsScreenViewerExpanded(true);
@@ -590,6 +744,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
                       isMuted={remote.isMuted}
                       isVideoOff={remote.isVideoOff}
                       isScreenSharing={remote.isScreenSharing}
+                      videoEffect={remote.videoEffect}
                       isPinned={
                         selectedFeedId === remote.clientId ||
                         selectedFeedId === `remote-screen-${remote.clientId}`
@@ -677,11 +832,31 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
               )}
             </button>
 
+            {/* Around.co Video Effects Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsEffectsOpen(!isEffectsOpen);
+                setIsSettingsOpen(false);
+              }}
+              className={`p-2 rounded-xl transition-colors duration-[var(--duration-quick)] ${
+                isEffectsOpen
+                  ? 'bg-gradient-to-r from-pink-600 to-indigo-600 text-white shadow-md shadow-pink-900/40 ring-1 ring-pink-400'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+              title="Around.co Webcam Filters & Auras"
+            >
+              <Sparkles className="w-4 h-4 text-pink-300" />
+            </button>
+
             {/* Device Settings Button */}
             <button
               type="button"
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className={`p-2 rounded-xl transition-colors ${
+              onClick={() => {
+                setIsSettingsOpen(!isSettingsOpen);
+                setIsEffectsOpen(false);
+              }}
+              className={`p-2 rounded-xl transition-colors duration-[var(--duration-quick)] ${
                 isSettingsOpen
                   ? 'bg-indigo-600 text-white'
                   : 'bg-slate-800 text-slate-300 hover:bg-slate-700'

@@ -5,6 +5,8 @@ import type {
   PeerCursor,
 } from '../../shared/eventstorming';
 import type { UserProfile } from '../types';
+import type { VideoEffect } from '../utils/videoEffects';
+import { DEFAULT_VIDEO_EFFECT } from '../utils/videoEffects';
 
 export interface RemotePeerState {
   clientId: string;
@@ -14,6 +16,7 @@ export interface RemotePeerState {
   isVideoOff: boolean;
   isMuted: boolean;
   isScreenSharing?: boolean;
+  videoEffect?: VideoEffect;
 }
 
 export interface UseWebRTCOptions {
@@ -40,6 +43,8 @@ export interface UseWebRTCReturn {
   selectedVideoDeviceId: string | null;
   switchAudioDevice: (deviceId: string) => Promise<void>;
   switchVideoDevice: (deviceId: string) => Promise<void>;
+  localVideoEffect: VideoEffect;
+  setVideoEffect: (effect: VideoEffect) => void;
   startCall: () => Promise<void>;
   leaveCall: () => void;
   toggleMute: () => Promise<void>;
@@ -75,6 +80,15 @@ export function useWebRTC({
   const [videoDevices, setVideoDevices] = useState<MediaDeviceInfo[]>([]);
   const [selectedAudioDeviceId, setSelectedAudioDeviceId] = useState<string | null>(null);
   const [selectedVideoDeviceId, setSelectedVideoDeviceId] = useState<string | null>(null);
+  const [localVideoEffect, setLocalVideoEffect] = useState<VideoEffect>(() => {
+    try {
+      const saved = localStorage.getItem('eventstormer_video_effect');
+      if (saved) return JSON.parse(saved) as VideoEffect;
+    } catch {}
+      return DEFAULT_VIDEO_EFFECT;
+  });
+  const localVideoEffectRef = useRef<VideoEffect>(localVideoEffect);
+  localVideoEffectRef.current = localVideoEffect;
   const localStreamRef = useRef<MediaStream | null>(null);
   const screenStreamRef = useRef<MediaStream | null>(null);
   const originalCamTrackRef = useRef<MediaStreamTrack | null>(null);
@@ -296,6 +310,7 @@ export function useWebRTC({
           isVideoOff,
           isMuted,
           isScreenSharing: existingPeer?.isScreenSharing || false,
+          videoEffect: existingPeer?.videoEffect,
         });
         return next;
       });
@@ -343,6 +358,17 @@ export function useWebRTC({
           },
         });
       }
+
+      // Send current video effect to new peer
+      sendMessage({
+        type: 'webrtc:signal',
+        targetClientId: peerId,
+        roomId: currentRoomIdRef.current,
+        signal: {
+          type: 'video-effect',
+          data: localVideoEffectRef.current,
+        },
+      });
       // Deterministic initiator rule: client with higher clientId sends the offer
       if (user.clientId > peerId) {
         try {
@@ -383,6 +409,22 @@ export function useWebRTC({
           next.set(fromClientId, {
             ...current,
             isScreenSharing: isSharing,
+          });
+          return next;
+        });
+        return;
+      }
+
+      // Handle remote video effect updates
+      if (signal.type === 'video-effect') {
+        const effect = signal.data as VideoEffect;
+        setRemotePeers((prev) => {
+          const current = prev.get(fromClientId);
+          if (!current) return prev;
+          const next = new Map(prev);
+          next.set(fromClientId, {
+            ...current,
+            videoEffect: effect,
           });
           return next;
         });
@@ -662,6 +704,25 @@ export function useWebRTC({
     }
   }, [isVideoOff]);
 
+  // Set and broadcast video effect (Around.co filters & aura)
+  const setVideoEffect = useCallback((effect: VideoEffect) => {
+    setLocalVideoEffect(effect);
+    try {
+      localStorage.setItem('eventstormer_video_effect', JSON.stringify(effect));
+    } catch {}
+
+    for (const peerId of peerConnectionsRef.current.keys()) {
+      sendMessage({
+        type: 'webrtc:signal',
+        targetClientId: peerId,
+        roomId: currentRoomIdRef.current,
+        signal: {
+          type: 'video-effect',
+          data: effect,
+        },
+      });
+    }
+  }, [sendMessage]);
   // Toggle Mute (re-request microphone if in listen-only mode)
   const toggleMute = useCallback(async () => {
     if (!localStreamRef.current) return;
@@ -914,6 +975,8 @@ export function useWebRTC({
     selectedVideoDeviceId,
     switchAudioDevice,
     switchVideoDevice,
+    localVideoEffect,
+    setVideoEffect,
     startCall,
     leaveCall,
     toggleMute,

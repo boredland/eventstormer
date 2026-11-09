@@ -523,6 +523,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onSwitchVideoDevice={webrtc.switchVideoDevice}
         followingClientId={followingClientId}
         onFollowPeer={setFollowingClientId}
+        localVideoEffect={webrtc.localVideoEffect}
+        onSetVideoEffect={webrtc.setVideoEffect}
       />
       {/* Breakout Active Bar */}
       {state.breakoutSession?.active && (

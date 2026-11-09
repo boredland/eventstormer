@@ -462,4 +462,55 @@ describe('WebRTC P2P Signaling & Room Isolation', () => {
       },
     });
   });
+
+  it('relays Around-style video effect updates (filter, aura, reaction)', () => {
+    const router = new MockWorkspaceSignalingRouter();
+
+    const peerA = new MockWebSocket({
+      clientId: 'peer-a',
+      name: 'Alice',
+      color: '#3b82f6',
+      windowStart: Date.now(),
+      messageCount: 0,
+    });
+
+    const peerB = new MockWebSocket({
+      clientId: 'peer-b',
+      name: 'Bob',
+      color: '#ef4444',
+      windowStart: Date.now(),
+      messageCount: 0,
+    });
+
+    router.addSocket(peerA);
+    router.addSocket(peerB);
+
+    // Alice sets Cyberpunk filter with Electric Cyan aura and Crown reaction
+    const effect = {
+      filter: 'cyberpunk',
+      aura: 'neon',
+      reaction: '👑',
+    };
+
+    router.handleMessage(peerA, {
+      type: 'webrtc:signal',
+      targetClientId: 'peer-b',
+      roomId: null,
+      signal: {
+        type: 'video-effect',
+        data: effect,
+      },
+    });
+
+    expect(peerB.sentMessages).toHaveLength(1);
+    expect(peerB.sentMessages[0]).toEqual({
+      type: 'webrtc:signal',
+      fromClientId: 'peer-a',
+      roomId: null,
+      signal: {
+        type: 'video-effect',
+        data: effect,
+      },
+    });
+  });
 });
