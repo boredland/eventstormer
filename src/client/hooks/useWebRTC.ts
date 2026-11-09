@@ -359,7 +359,6 @@ export function useWebRTC({
 
     pc.onconnectionstatechange = () => {
       if (
-        pc.connectionState === 'disconnected' ||
         pc.connectionState === 'failed' ||
         pc.connectionState === 'closed'
       ) {
