@@ -1,10 +1,19 @@
 import { WorkspaceRoom } from './workspace-room';
 
 export { WorkspaceRoom };
+import { verifyTurnstileToken } from './turnstile';
+export { verifyTurnstileToken };
 
 interface ExtendedEnv extends CloudflareEnv {
   TURNSTILE_SECRET_KEY?: string;
   ENVIRONMENT?: string;
+}
+
+interface CreateWorkspaceBody {
+  turnstileToken?: string;
+  format?: string;
+  name?: string;
+  templateKey?: string;
 }
 
 // In-memory rate limiting structures
@@ -49,43 +58,6 @@ function cleanupRateLimits() {
   }
 }
 
-async function verifyTurnstileToken(
-  token: string | null | undefined,
-  ip: string,
-  secretKey: string | undefined
-): Promise<boolean> {
-  // Clean bypass when secret key is not configured (e.g. initial dev setup)
-  if (!secretKey || secretKey.trim() === '' || secretKey.startsWith('0x4AAAAAA')) {
-    return true;
-  }
-
-  // Cloudflare test tokens
-  if (token === '1x00000000000000000000AA' || token === 'XXXX.DUMMY.TOKEN.XXXX') {
-    return true;
-  }
-
-  if (!token) {
-    return false;
-  }
-
-  try {
-    const formData = new FormData();
-    formData.append('secret', secretKey);
-    formData.append('response', token);
-    formData.append('remoteip', ip);
-
-    const result = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const outcome = (await result.json()) as { success: boolean; 'error-codes'?: string[] };
-    return outcome.success === true;
-  } catch (err) {
-    console.error('Turnstile verification error:', err);
-    return false;
-  }
-}
 
 const ADJECTIVES = [
   'swift', 'bright', 'agile', 'bold', 'clever', 'dynamic', 'epic', 'focused',
@@ -133,16 +105,17 @@ export default {
         );
       }
 
-      let bodyToken: string | undefined;
+      let body: CreateWorkspaceBody = {};
       try {
-        const body = (await request.json()) as { turnstileToken?: string; format?: string; name?: string };
-        bodyToken = body.turnstileToken;
+        const raw = await request.json();
+        if (typeof raw === 'object' && raw !== null) {
+          body = raw as CreateWorkspaceBody;
+        }
       } catch {
-        // Body may be empty
+        // Body may be empty or not JSON
       }
-
       const turnstileToken =
-        bodyToken ||
+        body.turnstileToken ||
         request.headers.get('cf-turnstile-response') ||
         url.searchParams.get('turnstileToken');
 
@@ -155,6 +128,19 @@ export default {
       }
 
       const id = generateWorkspaceSlug();
+      const doId = env.WORKSPACES.idFromName(id);
+      const roomStub = env.WORKSPACES.get(doId);
+
+      if (body.templateKey) {
+        await roomStub.fetch(
+          new Request(`http://internal/api/workspace/${id}/load-template`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ templateKey: body.templateKey }),
+          })
+        );
+      }
+
       return Response.json({
         id,
         url: `/w/${id}`,
@@ -166,7 +152,6 @@ export default {
     if (workspaceMatch) {
       const workspaceId = workspaceMatch[1];
       const subPath = workspaceMatch[2] || '';
-
       const doId = env.WORKSPACES.idFromName(workspaceId);
       const roomStub = env.WORKSPACES.get(doId);
 
