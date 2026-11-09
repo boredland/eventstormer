@@ -241,6 +241,16 @@ export function useWebSocket({
               }
               break;
             }
+
+            case 'breakout:state': {
+              if (onStateUpdate) {
+                onStateUpdate((prev) => ({
+                  ...prev,
+                  breakoutSession: msg.session || undefined,
+                }));
+              }
+              break;
+            }
           }
         } catch (err) {
           console.error('Error handling websocket message:', err);

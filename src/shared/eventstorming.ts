@@ -134,6 +134,7 @@ export interface StickyNote {
   authorColor?: string;
   customColor?: string;
   updatedAt: number;
+  breakoutRoomId?: string;
 }
 
 export interface PivotalLine {
@@ -149,6 +150,20 @@ export interface Swimlane {
   y: number;
   height: number;
   color?: string;
+}
+
+export interface BreakoutRoom {
+  id: string;
+  name: string;
+  color?: string;
+  participantCount?: number;
+}
+
+export interface BreakoutSessionState {
+  active: boolean;
+  rooms: BreakoutRoom[];
+  startedAt?: number;
+  durationMinutes?: number;
 }
 
 export type WorkshopFormat = 'big-picture' | 'process-modelling' | 'software-design';
@@ -371,6 +386,7 @@ export interface WorkspaceState {
   stickies: StickyNote[];
   pivotalLines: PivotalLine[];
   swimlanes: Swimlane[];
+  breakoutSession?: BreakoutSessionState;
 }
 
 export interface PeerCursor {
@@ -380,6 +396,7 @@ export interface PeerCursor {
   x: number;
   y: number;
   lastActive: number;
+  breakoutRoomId?: string;
 }
 
 // WebSocket message protocols
@@ -397,7 +414,10 @@ export type ClientMessage =
   | { type: 'workspace:set-format'; format: WorkshopFormat }
   | { type: 'workspace:set-phase'; phaseIndex: number }
   | { type: 'workspace:timer'; isRunning: boolean; secondsRemaining?: number }
-  | { type: 'workspace:load-template'; templateKey: string };
+  | { type: 'workspace:load-template'; templateKey: string }
+  | { type: 'breakout:start'; rooms: BreakoutRoom[]; durationMinutes: number }
+  | { type: 'breakout:join'; roomId: string | null }
+  | { type: 'breakout:end'; mergeToSwimlanes: boolean };
 
 export type ServerMessage =
   | { type: 'init'; state: WorkspaceState; peers: PeerCursor[]; yourClientId: string }
@@ -413,6 +433,7 @@ export type ServerMessage =
   | { type: 'swimlane:delete'; id: string }
   | { type: 'workspace:updated'; format?: WorkshopFormat; phaseIndex?: number; timer?: { isRunning: boolean; secondsRemaining: number } }
   | { type: 'workspace:reloaded'; state: WorkspaceState }
+  | { type: 'breakout:state'; session: BreakoutSessionState | null }
   | { type: 'error'; message: string };
 
 // Pre-Packaged Sample Workshops

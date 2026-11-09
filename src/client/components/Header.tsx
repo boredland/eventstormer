@@ -34,6 +34,8 @@ interface HeaderProps {
   onStartTour: () => void;
   onToggleSidebar: () => void;
   isSidebarOpen: boolean;
+  isBreakoutActive?: boolean;
+  onOpenBreakouts?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -54,6 +56,8 @@ export const Header: React.FC<HeaderProps> = ({
   onStartTour,
   onToggleSidebar,
   isSidebarOpen,
+  isBreakoutActive,
+  onOpenBreakouts,
 }) => {
   const [copied, setCopied] = useState(false);
   const [localSeconds, setLocalSeconds] = useState(timerSecondsRemaining);
@@ -195,6 +199,24 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* Right: Actions, Voting, Templates, Export, Share, Attendees */}
       <div className="flex items-center gap-2">
+        {/* Breakouts Button */}
+        <button
+          id="tour-breakouts"
+          onClick={onOpenBreakouts}
+          className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+            isBreakoutActive
+              ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30 ring-1 ring-indigo-400'
+              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+          }`}
+          title="Breakout Sub-Groups (Parallel Modeling)"
+        >
+          <Users className="w-4 h-4 text-indigo-400" />
+          <span className="hidden sm:inline">Breakouts</span>
+          {isBreakoutActive && (
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+          )}
+        </button>
+
         {/* Dot-Voting Toggle */}
         <button
           id="tour-voting"

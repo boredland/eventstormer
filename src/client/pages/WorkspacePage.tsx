@@ -6,7 +6,10 @@ import type {
   PivotalLine,
   Swimlane,
   StickyType,
+  BreakoutRoom,
 } from '../../shared/eventstorming';
+import { BreakoutModal } from '../components/BreakoutModal';
+import { BreakoutBar } from '../components/BreakoutBar';
 import { SAMPLE_TEMPLATES } from '../../shared/eventstorming';
 import type { UserProfile, ActiveTool } from '../types';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -90,6 +93,8 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [currentBreakoutRoomId, setCurrentBreakoutRoomId] = useState<string | null>(null);
+  const [isBreakoutModalOpen, setIsBreakoutModalOpen] = useState(false);
 
   // Undo / Redo engine
   const { pushSnapshot, setPresent, undo, redo } = useUndoRedo({
@@ -127,6 +132,9 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   // Mutations
   const handleUpsertSticky = useCallback(
     (sticky: StickyNote) => {
+      const stickyToSave = currentBreakoutRoomId
+        ? { ...sticky, breakoutRoomId: currentBreakoutRoomId }
+        : sticky;
       pushSnapshot({
         stickies: state.stickies,
         pivotalLines: state.pivotalLines,
@@ -134,20 +142,20 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
       });
 
       setState((prev) => {
-        const idx = prev.stickies.findIndex((s) => s.id === sticky.id);
+        const idx = prev.stickies.findIndex((s) => s.id === stickyToSave.id);
         let stickies: StickyNote[];
         if (idx >= 0) {
           stickies = [...prev.stickies];
-          stickies[idx] = sticky;
+          stickies[idx] = stickyToSave;
         } else {
-          stickies = [...prev.stickies, sticky];
+          stickies = [...prev.stickies, stickyToSave];
         }
         return { ...prev, stickies };
       });
 
-      sendMessage({ type: 'sticky:upsert', sticky });
+      sendMessage({ type: 'sticky:upsert', sticky: stickyToSave });
     },
-    [state.stickies, state.pivotalLines, state.swimlanes, pushSnapshot, sendMessage]
+    [state.stickies, state.pivotalLines, state.swimlanes, currentBreakoutRoomId, pushSnapshot, sendMessage]
   );
 
   const handleBatchMoveStickies = useCallback(
@@ -358,6 +366,30 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     [state.stickies, state.pivotalLines, state.swimlanes, pushSnapshot, sendMessage]
   );
 
+  // Breakout controls
+  const handleStartBreakout = useCallback(
+    (rooms: BreakoutRoom[], durationMinutes: number) => {
+      sendMessage({ type: 'breakout:start', rooms, durationMinutes });
+    },
+    [sendMessage]
+  );
+
+  const handleEndBreakout = useCallback(
+    (mergeToSwimlanes: boolean) => {
+      setCurrentBreakoutRoomId(null);
+      sendMessage({ type: 'breakout:end', mergeToSwimlanes });
+    },
+    [sendMessage]
+  );
+
+  const handleJoinBreakoutRoom = useCallback(
+    (roomId: string | null) => {
+      setCurrentBreakoutRoomId(roomId);
+      sendMessage({ type: 'breakout:join', roomId });
+    },
+    [sendMessage]
+  );
+
   // Quick Spawn Sticky from Facilitator Guide
   const handleQuickSpawn = (type: StickyType) => {
     const newSticky: StickyNote = {
@@ -427,15 +459,36 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         onStartTour={startJoyrideTour}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
         isSidebarOpen={isSidebarOpen}
+        isBreakoutActive={!!state.breakoutSession?.active}
+        onOpenBreakouts={() => setIsBreakoutModalOpen(true)}
       />
+
+      {/* Breakout Active Bar */}
+      {state.breakoutSession?.active && (
+        <BreakoutBar
+          session={state.breakoutSession}
+          currentRoomId={currentBreakoutRoomId}
+          peers={peers}
+          onSelectRoom={handleJoinBreakoutRoom}
+          onOpenModal={() => setIsBreakoutModalOpen(true)}
+        />
+      )}
 
       {/* Main Canvas Area */}
       <div className="relative flex-1 w-full h-full overflow-hidden">
         <Canvas
-          stickies={state.stickies}
+          stickies={
+            currentBreakoutRoomId
+              ? state.stickies.filter((s) => s.breakoutRoomId === currentBreakoutRoomId)
+              : state.stickies
+          }
           pivotalLines={state.pivotalLines}
           swimlanes={state.swimlanes}
-          peers={peers}
+          peers={
+            currentBreakoutRoomId
+              ? peers.filter((p) => p.breakoutRoomId === currentBreakoutRoomId)
+              : peers
+          }
           user={user}
           activeTool={activeTool}
           onSelectTool={(tool) => setActiveTool(tool)}
@@ -488,6 +541,18 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
         isOpen={isTemplatesOpen}
         onClose={() => setIsTemplatesOpen(false)}
         onSelectTemplate={handleLoadTemplate}
+      />
+
+      {/* Breakout Session Modal */}
+      <BreakoutModal
+        isOpen={isBreakoutModalOpen}
+        onClose={() => setIsBreakoutModalOpen(false)}
+        breakoutSession={state.breakoutSession}
+        peers={peers}
+        onStartBreakout={handleStartBreakout}
+        onEndBreakout={handleEndBreakout}
+        onJoinRoom={handleJoinBreakoutRoom}
+        currentRoomId={currentBreakoutRoomId}
       />
     </div>
   );

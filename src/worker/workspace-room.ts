@@ -9,6 +9,8 @@ import type {
   ServerMessage,
   PeerCursor,
   WorkshopFormat,
+  BreakoutSessionState,
+  BreakoutRoom,
 } from '../shared/eventstorming';
 import { SAMPLE_TEMPLATES } from '../shared/eventstorming';
 
@@ -18,6 +20,7 @@ interface SocketAttachment {
   color: string;
   windowStart: number;
   messageCount: number;
+  breakoutRoomId?: string;
 }
 
 export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
@@ -72,6 +75,11 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
         color TEXT
       );
     `);
+    try {
+      sql.exec(`ALTER TABLE stickies ADD COLUMN breakout_room_id TEXT`);
+    } catch {
+      // Column already exists
+    }
 
     // Initialize default metadata if missing
     const formatRow = sql.exec<{ value: string }>(
@@ -123,7 +131,15 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
     for (const row of stateRows) {
       stateMap.set(row.key, row.value);
     }
-
+    const breakoutJson = stateMap.get('breakout_session');
+    let breakoutSession: BreakoutSessionState | undefined;
+    if (breakoutJson) {
+      try {
+        breakoutSession = JSON.parse(breakoutJson);
+      } catch {
+        // ignore parse error
+      }
+    }
     const format = (stateMap.get('format') || 'big-picture') as WorkshopFormat;
     const currentPhaseIndex = parseInt(stateMap.get('current_phase') || '0', 10);
     let timerSecondsRemaining = parseInt(stateMap.get('timer_seconds') || '900', 10);
@@ -148,6 +164,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       author_color: string | null;
       custom_color: string | null;
       updated_at: number;
+      breakout_room_id: string | null;
     }>(`SELECT * FROM stickies`).toArray();
 
     const stickies: StickyNote[] = stickyRows.map((r) => ({
@@ -161,6 +178,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       authorColor: r.author_color ?? undefined,
       customColor: r.custom_color ?? undefined,
       updatedAt: r.updated_at,
+      breakoutRoomId: r.breakout_room_id ?? undefined,
     }));
 
     // Load pivotal lines
@@ -206,6 +224,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       stickies,
       pivotalLines,
       swimlanes,
+      breakoutSession,
     };
   }
 
@@ -235,6 +254,7 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
           x: 0,
           y: 0,
           lastActive: Date.now(),
+          breakoutRoomId: att.breakoutRoomId || undefined,
         });
       }
     }
@@ -393,8 +413,8 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       case 'sticky:upsert': {
         const s = parsed.sticky;
         sql.exec(
-          `INSERT INTO stickies (id, type, text, x, y, votes, author_name, author_color, custom_color, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `INSERT INTO stickies (id, type, text, x, y, votes, author_name, author_color, custom_color, updated_at, breakout_room_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON CONFLICT(id) DO UPDATE SET
              type = excluded.type,
              text = excluded.text,
@@ -404,7 +424,8 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
              author_name = excluded.author_name,
              author_color = excluded.author_color,
              custom_color = excluded.custom_color,
-             updated_at = excluded.updated_at`,
+             updated_at = excluded.updated_at,
+             breakout_room_id = excluded.breakout_room_id`,
           s.id,
           s.type,
           s.text,
@@ -414,7 +435,8 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
           s.authorName ?? null,
           s.authorColor ?? null,
           s.customColor ?? null,
-          s.updatedAt || now
+          s.updatedAt || now,
+          s.breakoutRoomId ?? null
         );
 
         this.broadcast({ type: 'sticky:upsert', sticky: s });
@@ -593,6 +615,109 @@ export class WorkspaceRoom extends DurableObject<CloudflareEnv> {
       case 'workspace:load-template': {
         this.loadTemplate(parsed.templateKey);
         const state = this.getState();
+        this.broadcast({ type: 'workspace:reloaded', state });
+        break;
+      }
+
+      case 'breakout:start': {
+        const sessionState: BreakoutSessionState = {
+          active: true,
+          rooms: parsed.rooms,
+          startedAt: Date.now(),
+          durationMinutes: parsed.durationMinutes,
+        };
+        sql.exec(
+          `INSERT INTO workspace_state (key, value) VALUES ('breakout_session', ?)
+           ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+          JSON.stringify(sessionState)
+        );
+        this.broadcast({ type: 'breakout:state', session: sessionState });
+        break;
+      }
+
+      case 'breakout:join': {
+        if (att) {
+          att.breakoutRoomId = parsed.roomId || undefined;
+          ws.serializeAttachment(att);
+        }
+        this.broadcast({
+          type: 'peer:update',
+          peer: {
+            clientId: att?.clientId || '',
+            name: att?.name || 'Anonymous',
+            color: att?.color || '#3b82f6',
+            x: 0,
+            y: 0,
+            lastActive: Date.now(),
+            breakoutRoomId: parsed.roomId || undefined,
+          },
+        });
+        break;
+      }
+
+      case 'breakout:end': {
+        if (parsed.mergeToSwimlanes) {
+          const breakoutRows = sql.exec<{ breakout_room_id: string }>(
+            `SELECT DISTINCT breakout_room_id FROM stickies WHERE breakout_room_id IS NOT NULL`
+          ).toArray();
+
+          let currentY = 100;
+          const maxLaneRow = sql.exec<{ max_y: number | null }>(
+            `SELECT MAX(y + height) as max_y FROM swimlanes`
+          ).toArray()[0];
+          if (maxLaneRow && maxLaneRow.max_y !== null) {
+            currentY = maxLaneRow.max_y + 60;
+          }
+
+          for (const row of breakoutRows) {
+            const bId = row.breakout_room_id;
+            if (!bId) continue;
+
+            const laneId = `lane-breakout-${bId}-${Date.now()}`;
+            const laneName = `Sub-Group: ${bId.replace(/[-_]/g, ' ')}`;
+            const laneHeight = 280;
+
+            sql.exec(
+              `INSERT INTO swimlanes (id, name, y, height, color) VALUES (?, ?, ?, ?, ?)`,
+              laneId,
+              laneName,
+              currentY,
+              laneHeight,
+              '#818cf8'
+            );
+
+            const stickiesInRoom = sql.exec<{ id: string }>(
+              `SELECT id FROM stickies WHERE breakout_room_id = ?`,
+              bId
+            ).toArray();
+
+            for (const s of stickiesInRoom) {
+              sql.exec(
+                `UPDATE stickies SET y = ?, breakout_room_id = NULL, updated_at = ? WHERE id = ?`,
+                currentY + 50,
+                Date.now(),
+                s.id
+              );
+            }
+
+            currentY += laneHeight + 40;
+          }
+        } else {
+          sql.exec(`UPDATE stickies SET breakout_room_id = NULL`);
+        }
+
+        sql.exec(`DELETE FROM workspace_state WHERE key = 'breakout_session'`);
+
+        for (const clientWs of this.ctx.getWebSockets()) {
+          const clientAtt = clientWs.deserializeAttachment() as SocketAttachment | null;
+          if (clientAtt) {
+            clientAtt.breakoutRoomId = undefined;
+            clientWs.serializeAttachment(clientAtt);
+          }
+        }
+
+        const state = this.getState();
+        this.broadcast({ type: 'breakout:state', session: null });
         this.broadcast({ type: 'workspace:reloaded', state });
         break;
       }
