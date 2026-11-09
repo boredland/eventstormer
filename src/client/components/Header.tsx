@@ -228,7 +228,7 @@ export const Header: React.FC<HeaderProps> = ({
               ? 'bg-amber-500 text-slate-950 font-bold shadow-md shadow-amber-500/20'
               : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
           }`}
-          title="Voting: when on, each click on a sticky adds one dot. Use it to pick what matters most."
+          title="Voting: when on, each sticky gets a 👍 button. Click it to add a vote (★). Use it to pick what matters most."
         >
           <Vote className="w-4 h-4" />
           <span className="hidden md:inline">Voting</span>

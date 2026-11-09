@@ -83,7 +83,7 @@ export const BreakoutBar: React.FC<BreakoutBarProps> = ({
       <button
         onClick={onOpenModal}
         className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 border border-indigo-500/40 font-semibold transition-colors ml-1"
-        title="Facilitator: add teams or end the breakout and merge the work back"
+        title="Facilitator: switch teams or end the breakout and merge the work back"
       >
         <Settings className="w-3 h-3" />
         <span>Manage</span>

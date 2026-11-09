@@ -68,7 +68,9 @@ export const StickyPalette: React.FC<StickyPaletteProps> = ({
                 {STICKY_EXPLAINERS[stickyHover].ask}
               </p>
               <p className="text-[11px] text-slate-500 mt-2">
-                Click to place one, or double-click the board.
+                {hovered === 'domain-event'
+                  ? 'Click this, then click the board to place it. Double-clicking an empty spot also makes one.'
+                  : 'Click this, then click the board to place it.'}
               </p>
             </>
           ) : (

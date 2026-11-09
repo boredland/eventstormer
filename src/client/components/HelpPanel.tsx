@@ -15,7 +15,7 @@ interface HelpPanelProps {
 
 const SHORTCUTS: Array<[string, string]> = [
   ['Double-click board', 'New orange Domain Event'],
-  ['1 to 9', 'New sticky of that color under the mouse'],
+  ['1 to 9', 'New sticky in the middle of your screen (same order as the palette badges)'],
   ['Double-click sticky', 'Edit its text (Enter saves, Esc cancels)'],
   ['Space + drag', 'Move around the board'],
   ['Scroll / pinch', 'Zoom in and out'],
@@ -141,7 +141,7 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ isOpen, onClose, onStartTo
               <li><b>Phases</b>: step-by-step guide for the facilitator, with advice for each stage.</li>
               <li><b>Timer</b>: shared countdown. Everyone sees the same time and hears a tone at zero.</li>
               <li><b>Breakouts</b>: split into small groups that each get their own private board. When time is up, their work is merged onto the main board as one lane per group.</li>
-              <li><b>Vote</b>: each click on a sticky adds one dot. Use it to find what matters most.</li>
+              <li><b>Voting</b>: when on, every sticky shows a 👍 button. Click it to add a vote (★ with a count). Use it to find what matters most.</li>
               <li><b>Templates</b>: load a finished example to see what a board looks like.</li>
               <li><b>Export</b>: download the board as Markdown or JSON.</li>
               <li><b>Invite</b>: copies the link. Anyone with the link can join.</li>

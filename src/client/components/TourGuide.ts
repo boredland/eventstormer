@@ -81,7 +81,7 @@ export function startJoyrideTour() {
         popover: {
           title: 'Voting',
           description:
-            'Turn this on, then click a sticky to give it a dot. The stickies with the most dots are what the group cares about most. Usually used on the pink problem stickies.',
+            'Turn this on and every sticky gets a 👍 button. Click it to add a vote (shown as ★ and a count). The stickies with the most votes are what the group cares about most. Usually used on the pink problem stickies.',
           side: 'bottom',
           align: 'end',
         },
