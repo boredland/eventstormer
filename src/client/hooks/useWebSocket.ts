@@ -32,11 +32,14 @@ export function useWebSocket({
   const lastCursorSendRef = useRef<number>(0);
   const heartbeatRef = useRef<number | null>(null);
   const lastCursorPosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const pendingMessagesRef = useRef<ClientMessage[]>([]);
   const onServerMessageRef = useRef(onServerMessage);
   onServerMessageRef.current = onServerMessage;
   const sendMessage = useCallback((msg: ClientMessage) => {
     if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
       socketRef.current.send(JSON.stringify(msg));
+    } else {
+      pendingMessagesRef.current.push(msg);
     }
   }, []);
 
@@ -86,6 +89,12 @@ export function useWebSocket({
             color: user.color,
           } satisfies ClientMessage)
         );
+
+        // Flush messages queued before the socket opened, preserving send order
+        const pending = pendingMessagesRef.current.splice(0);
+        for (const msg of pending) {
+          ws.send(JSON.stringify(msg));
+        }
       };
 
       ws.onmessage = (event) => {
@@ -300,6 +309,7 @@ export function useWebSocket({
       if (socketRef.current) {
         socketRef.current.close();
       }
+      pendingMessagesRef.current = [];
     };
   }, [workspaceId, user.clientId, user.name, user.color, turnstileToken, onStateUpdate]);
 

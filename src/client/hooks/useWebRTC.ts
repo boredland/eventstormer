@@ -68,6 +68,18 @@ const ICE_SERVERS: RTCIceServer[] = [
   },
 ];
 
+function attachLocalTrack(pc: RTCPeerConnection, track: MediaStreamTrack, stream: MediaStream) {
+  const transceiver = pc.getTransceivers().find((t) => t.receiver.track.kind === track.kind);
+  if (transceiver) {
+    transceiver.direction = 'sendrecv';
+    if (transceiver.sender.track?.id !== track.id) {
+      transceiver.sender.replaceTrack(track).catch(() => {});
+    }
+    return;
+  }
+  pc.addTransceiver(track, { streams: [stream], direction: 'sendrecv' });
+}
+
 export function useWebRTC({
   currentRoomId,
   user,
@@ -255,14 +267,12 @@ export function useWebRTC({
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     peerConnectionsRef.current.set(peerId, pc);
 
-    // Renegotiation handler — MUST be set before addTrack/addTransceiver so initial track
-    // addition fires it. Uses makingOffer flag to prevent glare.
+    // Initial offers are created only by peer-joined's deterministic initiator rule.
+    // This handler is for later renegotiations after local media changes.
     let makingOffer = false;
     pc.onnegotiationneeded = async () => {
       try {
-        if (makingOffer || pc.signalingState !== 'stable') return;
-        const isInitial = !pc.currentRemoteDescription;
-        if (isInitial && user.clientId <= peerId) return;
+        if (makingOffer || pc.signalingState !== 'stable' || !pc.currentRemoteDescription) return;
         makingOffer = true;
         const offer = await pc.createOffer();
         await pc.setLocalDescription(offer);
@@ -279,27 +289,20 @@ export function useWebRTC({
       }
     };
 
-    // Attach local stream tracks
-    const activeStream = screenStreamRef.current || localStreamRef.current;
-    if (activeStream && activeStream.getTracks().length > 0) {
-      for (const track of activeStream.getTracks()) {
-        pc.addTrack(track, activeStream);
-      }
-    }
+    // Exactly one audio and one video m-line per connection, created in fixed order.
+    // Later track changes replaceTrack on these transceivers instead of adding m-lines.
+    const localAudioTrack = localStreamRef.current?.getAudioTracks()[0] || null;
+    const activeVideoStream = screenStreamRef.current || localStreamRef.current;
+    const localVideoTrack = activeVideoStream?.getVideoTracks()[0] || null;
 
-    // Ensure transceivers exist for receive-only peers (no local mic/cam)
-    const hasAudio = pc.getSenders().some((s) => s.track?.kind === 'audio');
-    const hasVideo = pc.getSenders().some((s) => s.track?.kind === 'video');
-    if (!hasAudio) {
-      try {
-        pc.addTransceiver('audio', { direction: 'recvonly' });
-      } catch {}
-    }
-    if (!hasVideo) {
-      try {
-        pc.addTransceiver('video', { direction: 'recvonly' });
-      } catch {}
-    }
+    pc.addTransceiver(localAudioTrack || 'audio', {
+      direction: localAudioTrack ? 'sendrecv' : 'recvonly',
+      ...(localAudioTrack && localStreamRef.current ? { streams: [localStreamRef.current] } : {}),
+    });
+    pc.addTransceiver(localVideoTrack || 'video', {
+      direction: localVideoTrack ? 'sendrecv' : 'recvonly',
+      ...(localVideoTrack && activeVideoStream ? { streams: [activeVideoStream] } : {}),
+    });
 
     // ICE Candidate generation
     pc.onicecandidate = (event) => {
@@ -421,8 +424,8 @@ export function useWebRTC({
           data: localVideoEffectRef.current,
         },
       });
-      // Fallback: create initial offer if onnegotiationneeded didn't fire (e.g., no local tracks yet)
-      if (user.clientId > peerId && isCallActiveRef.current && pc.signalingState === 'stable') {
+      // Initial offer: deterministic initiator, and only before any remote description exists
+      if (user.clientId > peerId && !pc.currentRemoteDescription && pc.signalingState === 'stable') {
         try {
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
@@ -637,7 +640,7 @@ export function useWebRTC({
           tx.sender.replaceTrack(track).catch(() => {});
           tx.direction = 'sendrecv';
         } else if (!pc.getSenders().some((s) => s.track?.kind === track.kind)) {
-          try { pc.addTrack(track, effectiveStream); } catch {}
+          attachLocalTrack(pc, track, effectiveStream);
         }
       }
     }
@@ -738,7 +741,7 @@ export function useWebRTC({
         if (audioSender) {
           audioSender.replaceTrack(newTrack).catch(() => {});
         } else {
-          pc.addTrack(newTrack, localStreamRef.current);
+          attachLocalTrack(pc, newTrack, localStreamRef.current!);
         }
       }
 
@@ -783,7 +786,7 @@ export function useWebRTC({
           if (videoSender) {
             videoSender.replaceTrack(newTrack).catch(() => {});
           } else {
-            pc.addTrack(newTrack, localStreamRef.current);
+            attachLocalTrack(pc, newTrack, localStreamRef.current!);
           }
         }
       }
@@ -843,7 +846,7 @@ export function useWebRTC({
                 audioTx.direction = 'sendrecv';
                 audioTx.sender.replaceTrack(newTrack).catch(() => {});
               } else {
-                pc.addTrack(newTrack, localStreamRef.current);
+                attachLocalTrack(pc, newTrack, localStreamRef.current!);
               }
             }
             setupSpeakingDetector(user.clientId, localStreamRef.current, true);
@@ -892,7 +895,7 @@ export function useWebRTC({
                 videoTx.direction = 'sendrecv';
                 videoTx.sender.replaceTrack(newTrack).catch(() => {});
               } else {
-                pc.addTrack(newTrack, localStreamRef.current);
+                attachLocalTrack(pc, newTrack, localStreamRef.current!);
               }
             }
             setIsVideoOff(false);
@@ -986,7 +989,7 @@ export function useWebRTC({
               tx.direction = 'sendrecv';
               tx.sender.replaceTrack(screenVideoTrack).catch(() => {});
             } else {
-              try { pc.addTrack(screenVideoTrack, displayStream); } catch {}
+              attachLocalTrack(pc, screenVideoTrack, displayStream);
             }
           }
 
