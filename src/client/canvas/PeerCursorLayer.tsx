@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import type { PeerCursor } from '../../shared/eventstorming';
 import type { RemotePeerState } from '../hooks/useWebRTC';
 import { getFilterCss, getAuraClasses } from '../utils/videoEffects';
@@ -11,34 +11,49 @@ interface PeerCursorLayerProps {
 }
 
 const PeerVideoElement: React.FC<{ stream: MediaStream; filterCss?: string }> = ({ stream, filterCss }) => {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const streamIdRef = useRef<string | null>(null);
+  // srcObject is DOM state, not a prop — bind in both directions via callback ref.
+  // Whichever arrives second (element mount or stream arrival) does the binding.
+  const elRef = useRef<HTMLVideoElement | null>(null);
+  const wantRef = useRef<MediaStream | null>(null);
 
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el || !stream) return;
-    // Only re-assign srcObject when the stream actually changes — re-assigning the
-    // same stream stops playback and renders a black frame.
-    if (streamIdRef.current !== stream.id) {
-      streamIdRef.current = stream.id;
-      el.srcObject = stream;
-    }
-    // Ensure playback starts after srcObject is set or tracks are added
-    if (el.paused) el.play().catch(() => {});
-  }, [stream]);
+  const paint = useCallback((node: HTMLVideoElement | null) => {
+    if (!node || node.srcObject === wantRef.current) return;
+    node.srcObject = wantRef.current;
+    if (wantRef.current) void node.play().catch(() => undefined);
+  }, []);
 
-  // Re-attempt playback when tracks become available
+  // Callback ref: pulls stream when a new element mounts
+  const videoRef = useCallback((node: HTMLVideoElement | null) => {
+    elRef.current = node;
+    paint(node);
+  }, [paint]);
+
+  // Push stream when it arrives (or changes)
   useEffect(() => {
-    const el = videoRef.current;
-    if (!el || !stream) return;
-    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    wantRef.current = stream;
+    paint(elRef.current);
+  }, [stream, paint]);
+
+  // Re-attempt playback when tracks are added to the stream
+  useEffect(() => {
+    const node = elRef.current;
+    if (!stream) return;
+    const onLoaded = () => {
+      const el = elRef.current;
+      if (el && el.paused) el.play().catch(() => undefined);
+    };
     stream.addEventListener('addtrack', onLoaded);
-    el.addEventListener('loadeddata', onLoaded);
+    if (node) node.addEventListener('loadeddata', onLoaded);
     return () => {
       stream.removeEventListener('addtrack', onLoaded);
-      el.removeEventListener('loadeddata', onLoaded);
+      if (node) node.removeEventListener('loadeddata', onLoaded);
     };
   }, [stream]);
+
+  // Clear stale stream on unmount
+  useEffect(() => {
+    return () => { wantRef.current = null; };
+  }, []);
 
   return (
     <video

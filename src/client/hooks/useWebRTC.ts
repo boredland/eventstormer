@@ -58,6 +58,23 @@ export interface UseWebRTCReturn {
 const ICE_SERVERS: RTCIceServer[] = [
   { urls: 'stun:stun.l.google.com:19302' },
   { urls: 'stun:stun1.l.google.com:19302' },
+  // Free TURN servers (Open Relay) — required for peers behind symmetric NAT
+  // where STUN alone cannot establish direct connectivity
+  {
+    urls: 'turn:openrelay.metered.ca:80',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
+  {
+    urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+    username: 'openrelayproject',
+    credential: 'openrelayproject',
+  },
 ];
 
 export function useWebRTC({
@@ -268,6 +285,23 @@ export function useWebRTC({
         pc.addTransceiver('video', { direction: 'recvonly' });
       } catch {}
     }
+
+    // Renegotiation handler — fires when addTrack/replaceTrack requires a new SDP exchange
+    pc.onnegotiationneeded = async () => {
+      try {
+        if (pc.signalingState !== 'stable') return;
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        sendMessage({
+          type: 'webrtc:signal',
+          targetClientId: peerId,
+          roomId: currentRoomIdRef.current,
+          signal: { type: 'offer', data: offer },
+        });
+      } catch (err) {
+        console.warn('Negotiation failed for peer', peerId, err);
+      }
+    };
 
     // ICE Candidate generation
     pc.onicecandidate = (event) => {
