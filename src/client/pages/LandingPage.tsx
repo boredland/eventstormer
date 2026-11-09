@@ -2,8 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Turnstile } from '@marsidev/react-turnstile';
 import type { WorkshopFormat } from '../../shared/eventstorming';
 import { WORKSHOP_FORMATS, SAMPLE_TEMPLATES } from '../../shared/eventstorming';
-import { Sparkles, ArrowRight, ShieldCheck, Zap, Users, Compass, Timer, Vote, Film, Play, Volume2 } from 'lucide-react';
-
+import { Sparkles, ArrowRight, ShieldCheck, Zap, Users, Compass, Timer, Vote, Film, Play, Volume2, Video, Eye } from 'lucide-react';
 interface LandingPageProps {
   onNavigateToWorkspace: (workspaceId: string, templateKey?: string) => void;
 }
@@ -114,14 +113,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
         <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-white max-w-3xl leading-tight">
           Accelerate Domain Discovery with{' '}
           <span className="bg-gradient-to-r from-amber-400 via-orange-500 to-pink-500 bg-clip-text text-transparent">
-            EventStorming
+            EventStorming & Real-Time Video
           </span>
         </h1>
 
         <p className="mt-5 text-base sm:text-lg text-slate-400 max-w-2xl leading-relaxed">
           The collaborative canvas engineered for Alberto Brandolini’s DDD methodology.
-          Infinite zoomable workspace, strict Brandolini color grammar, synchronized facilitator timer,
-          and zero-friction URL sharing.
+          Infinite zoomable workspace, serverless P2P WebRTC video calls with Around.co webcam effects,
+          live cursor bubbles, participant follow mode, and breakout room isolation.
         </p>
         {/* Promotional Ad Video Showcase */}
         <div className="mt-8 w-full max-w-4xl relative group">
@@ -137,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
               </div>
               <div className="flex items-center gap-1.5 text-[11px] text-amber-400 font-medium">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>14s Product Tour</span>
+                <span>15s Interactive Tour (P2P Video + Canvas)</span>
               </div>
             </div>
 
@@ -154,7 +153,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
               />
             </div>
             <div className="px-4 py-2.5 bg-slate-950/60 border-t border-slate-800/60 flex flex-wrap items-center justify-between text-[11px] text-slate-400">
-              <span>⚡ 0 Sign-in • Sub-5ms Cloudflare Durable Objects multiplayer • Strict Brandolini color grammar</span>
+              <span>⚡ 0 Sign-in • Serverless WebRTC Video Mesh • Around.co Cam Filters • 1-Click Follow Mode</span>
               <span className="text-slate-500">Unmute anytime for audio</span>
             </div>
           </div>
@@ -274,40 +273,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onNavigateToWorkspace 
         </div>
 
         {/* Feature Highlights Grid */}
-        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 w-full text-left max-w-4xl border-t border-slate-900 pt-10">
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-3 gap-6 w-full text-left max-w-4xl border-t border-slate-900 pt-10">
           <div className="space-y-1">
             <div className="text-amber-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
               <Zap className="w-4 h-4" /> Brandolini Syntax
             </div>
             <p className="text-xs text-slate-400 leading-snug">
-              Strict geometries & color codes: orange events, tilted pink hotspots, yellow actors.
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <div className="text-indigo-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <Users className="w-4 h-4" /> Live Multiplayer
-            </div>
-            <p className="text-xs text-slate-400 leading-snug">
-              Cloudflare Durable Objects & WebSockets broadcast sticky edits and smooth peer cursors.
+              Strict geometries & color codes: orange events, tilted pink hotspots, yellow actors, command-readmodel loops.
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="text-emerald-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
-              <Compass className="w-4 h-4" /> Facilitator Steps
+              <Video className="w-4 h-4" /> Serverless P2P Video
             </div>
             <p className="text-xs text-slate-400 leading-snug">
-              Interactive stepper with step-by-step guidance, recommended stickies, and tips.
+              Lightweight WebRTC audio/video mesh directly in your canvas. Zero external media servers, 100% private.
             </p>
           </div>
 
           <div className="space-y-1">
             <div className="text-pink-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+              <Sparkles className="w-4 h-4" /> Around.co Cam Effects
+            </div>
+            <p className="text-xs text-slate-400 leading-snug">
+              Aesthetic filters (Cyberpunk, Noir, Sunset, Phosphor), glowing aura rings, and floating reaction badges.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-indigo-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+              <Eye className="w-4 h-4" /> Cursor Cams & Follow
+            </div>
+            <p className="text-xs text-slate-400 leading-snug">
+              Each collaborator's webcam floats above their cursor on the canvas. 1-click follow tracks facilitators smoothly.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-cyan-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
+              <Users className="w-4 h-4" /> Breakout Sub-Groups
+            </div>
+            <p className="text-xs text-slate-400 leading-snug">
+              Private sub-group breakout rooms that automatically isolate audio/video and merge back to swimlanes.
+            </p>
+          </div>
+
+          <div className="space-y-1">
+            <div className="text-rose-400 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider">
               <Timer className="w-4 h-4" /> Timer & Dot-Voting
             </div>
             <p className="text-xs text-slate-400 leading-snug">
-              Timebox chaotic generation with shared countdowns and prioritize bottlenecks together.
+              Timebox chaotic generation with synchronized countdowns and prioritize bottlenecks together with 👍 voting.
             </p>
           </div>
         </div>

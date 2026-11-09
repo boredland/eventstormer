@@ -54,7 +54,7 @@ def draw_canvas_grid(draw, width, height, offset_x=0, offset_y=0, spacing=32):
         for y in range(start_y, height, spacing):
             draw.point((x, y), fill=(30, 41, 59))
 
-def draw_header(draw, title_text, format_name, timer_str="12:45", voting_active=False):
+def draw_header(draw, title_text, format_name, timer_str="12:45", voting_active=False, call_active=True, following_name=None):
     # Top navbar
     draw.rectangle([0, 0, WIDTH, 54], fill=(15, 23, 42), outline=(30, 41, 59), width=1)
     # Brand logo
@@ -63,37 +63,104 @@ def draw_header(draw, title_text, format_name, timer_str="12:45", voting_active=
     draw.text((192, 21), "Brandolini DDD", font=font_xs, fill=(251, 191, 36))
 
     # Workshop Title
-    draw.text((310, 18), title_text, font=font_base_bold, fill=(241, 245, 249))
+    draw.text((290, 18), title_text[:28], font=font_base_bold, fill=(241, 245, 249))
 
     # Format Badge
-    draw_rounded_rect(draw, [550, 17, 710, 37], 10, fill=(30, 58, 138), outline=(59, 130, 246), width=1)
-    draw.text((565, 21), format_name, font=font_xs, fill=(147, 197, 253))
+    draw_rounded_rect(draw, [520, 17, 650, 37], 10, fill=(30, 58, 138), outline=(59, 130, 246), width=1)
+    draw.text((532, 21), format_name, font=font_xs, fill=(147, 197, 253))
 
     # Timer Pill
-    draw_rounded_rect(draw, [730, 17, 825, 37], 10, fill=(20, 83, 45) if not voting_active else (153, 27, 27), outline=(34, 197, 94) if not voting_active else (239, 68, 68), width=1)
-    draw.text((742, 21), f"⏱️ {timer_str}", font=font_xs, fill=(240, 253, 244))
+    draw_rounded_rect(draw, [660, 17, 745, 37], 10, fill=(20, 83, 45) if not voting_active else (153, 27, 27), outline=(34, 197, 94) if not voting_active else (239, 68, 68), width=1)
+    draw.text((670, 21), f"⏱️ {timer_str}", font=font_xs, fill=(240, 253, 244))
+
+    # Breakouts Button
+    draw_rounded_rect(draw, [755, 17, 835, 37], 10, fill=(30, 41, 59), outline=(51, 65, 85), width=1)
+    draw.text((765, 21), "Breakouts", font=font_xs, fill=(203, 213, 225))
+
+    # Call Button (Active Emerald Pill)
+    if call_active:
+        draw_rounded_rect(draw, [845, 17, 915, 37], 10, fill=(5, 150, 105), outline=(52, 211, 153), width=1)
+        draw.ellipse([853, 23, 859, 29], fill=(255, 255, 255))
+        draw.text((865, 21), "Call (3)", font=font_xs, fill=(255, 255, 255))
+    else:
+        draw_rounded_rect(draw, [845, 17, 905, 37], 10, fill=(30, 41, 59), outline=(51, 65, 85), width=1)
+        draw.text((858, 21), "Call", font=font_xs, fill=(148, 163, 184))
 
     # Voting Mode Badge
     if voting_active:
-        draw_rounded_rect(draw, [840, 17, 945, 37], 10, fill=(136, 19, 55), outline=(244, 63, 94), width=1)
-        draw.text((852, 21), "🗳️ Dot-Voting", font=font_xs, fill=(255, 228, 230))
+        draw_rounded_rect(draw, [925, 17, 1005, 37], 10, fill=(136, 19, 55), outline=(244, 63, 94), width=1)
+        draw.text((934, 21), "🗳️ Voting", font=font_xs, fill=(255, 228, 230))
 
     # Peer Avatars
-    avatars = [("AL", (14, 165, 233)), ("SA", (249, 115, 22)), ("EL", (168, 85, 247)), ("MK", (34, 197, 94))]
-    start_av_x = 970
+    avatars = [("AL", (14, 165, 233)), ("SA", (249, 115, 22)), ("EL", (168, 85, 247))]
+    start_av_x = 1015
     for idx, (initials, color) in enumerate(avatars):
-        ax = start_av_x + idx * 28
-        draw.ellipse([ax, 15, ax + 24, 39], fill=color)
+        ax = start_av_x + idx * 26
+        draw.ellipse([ax, 16, ax + 22, 38], fill=color, outline=(30, 41, 59), width=1)
         draw.text((ax + 4, 21), initials, font=font_xs, fill=(255, 255, 255))
 
     # Actions: Export & Share
-    draw_rounded_rect(draw, [1100, 15, 1180, 39], 6, fill=(30, 41, 59), outline=(51, 65, 85), width=1)
-    draw.text((1115, 20), "Export", font=font_xs, fill=(226, 232, 240))
-    draw_rounded_rect(draw, [1190, 15, 1260, 39], 6, fill=(217, 119, 6), outline=None)
-    draw.text((1207, 20), "Share", font=font_xs, fill=(15, 23, 42))
+    draw_rounded_rect(draw, [1105, 16, 1175, 38], 6, fill=(30, 41, 59), outline=(51, 65, 85), width=1)
+    draw.text((1120, 21), "Export", font=font_xs, fill=(226, 232, 240))
+    draw_rounded_rect(draw, [1185, 16, 1255, 38], 6, fill=(217, 119, 6), outline=None)
+    draw.text((1200, 21), "Share", font=font_xs, fill=(15, 23, 42))
+
+    # Following Banner (if following someone)
+    if following_name:
+        fw = len(following_name) * 7 + 130
+        fx = (WIDTH - fw) // 2
+        draw_rounded_rect(draw, [fx, 62, fx + fw, 90], 14, fill=(79, 70, 229, 230), outline=(129, 140, 248), width=1)
+        draw.text((fx + 12, 68), f"👀 Following {following_name}   ✕ Stop", font=font_xs, fill=(255, 255, 255))
+
+def draw_videocall_dock(draw, t, show_effects=False):
+    dock_x = WIDTH - 270
+    dock_y = 66
+    dock_h = 175 if show_effects else 115
+    draw_rounded_rect(draw, [dock_x, dock_y, dock_x + 250, dock_y + dock_h], 16, fill=(15, 23, 42, 235), outline=(51, 65, 85), width=1)
+
+    # Title bar
+    draw.ellipse([dock_x + 14, dock_y + 11, dock_x + 20, dock_y + 17], fill=(52, 211, 153))
+    draw_rounded_rect(draw, [dock_x + 26, dock_y + 7, dock_x + 120, dock_y + 23], 8, fill=(30, 58, 138, 180), outline=(59, 130, 246), width=1)
+    draw.text((dock_x + 34, dock_y + 9), "Main Room", font=font_xs, fill=(147, 197, 253))
+    draw.text((dock_x + 130, dock_y + 9), "👥 3 in call", font=font_xs, fill=(148, 163, 184))
+
+    # Bubbles row
+    # Local Alex (Cyberpunk + Crown)
+    draw.ellipse([dock_x + 16, dock_y + 32, dock_x + 64, dock_y + 80], fill=(14, 165, 233), outline=(34, 211, 238), width=2)
+    draw.text((dock_x + 30, dock_y + 50), "AL", font=font_xs, fill=(255, 255, 255))
+    draw.text((dock_x + 30, dock_y + 24), "👑", font=font_xs, fill=(255, 255, 255))
+
+    # Sarah (speaking, pulsing emerald ring)
+    pulse = int(3 * math.sin(t * 8))
+    draw.ellipse([dock_x + 76 - pulse, dock_y + 32 - pulse, dock_x + 124 + pulse, dock_y + 80 + pulse], outline=(52, 211, 153), width=3)
+    draw.ellipse([dock_x + 76, dock_y + 32, dock_x + 124, dock_y + 80], fill=(249, 115, 22))
+    draw.text((dock_x + 90, dock_y + 50), "SA", font=font_xs, fill=(255, 255, 255))
+
+    # Elena (Sunset aura)
+    draw.ellipse([dock_x + 136, dock_y + 32, dock_x + 184, dock_y + 80], fill=(168, 85, 247), outline=(251, 191, 36), width=2)
+    draw.text((dock_x + 150, dock_y + 50), "EL", font=font_xs, fill=(255, 255, 255))
+
+    # Controls bar
+    draw_rounded_rect(draw, [dock_x + 18, dock_y + 88, dock_x + 48, dock_y + 108], 6, fill=(30, 41, 59))
+    draw.text((dock_x + 25, dock_y + 92), "🎤", font=font_xs, fill=(255, 255, 255))
+    draw_rounded_rect(draw, [dock_x + 56, dock_y + 88, dock_x + 86, dock_y + 108], 6, fill=(30, 41, 59))
+    draw.text((dock_x + 63, dock_y + 92), "📹", font=font_xs, fill=(255, 255, 255))
+    draw_rounded_rect(draw, [dock_x + 94, dock_y + 88, dock_x + 124, dock_y + 108], 6, fill=(30, 41, 59))
+    draw.text((dock_x + 101, dock_y + 92), "🖥️", font=font_xs, fill=(255, 255, 255))
+    # Sparkles (Around effects)
+    draw_rounded_rect(draw, [dock_x + 132, dock_y + 88, dock_x + 162, dock_y + 108], 6, fill=(219, 39, 119) if show_effects else (30, 41, 59))
+    draw.text((dock_x + 139, dock_y + 92), "✨", font=font_xs, fill=(255, 255, 255))
+    # Leave
+    draw_rounded_rect(draw, [dock_x + 170, dock_y + 88, dock_x + 200, dock_y + 108], 6, fill=(225, 29, 72))
+    draw.text((dock_x + 177, dock_y + 92), "📞", font=font_xs, fill=(255, 255, 255))
+
+    # Around Effects Popover if show_effects
+    if show_effects:
+        draw_rounded_rect(draw, [dock_x + 10, dock_y + 118, dock_x + 240, dock_y + 166], 8, fill=(2, 6, 23, 240), outline=(219, 39, 119), width=1)
+        draw.text((dock_x + 16, dock_y + 124), "✨ Around Effects: Cyberpunk • Cyan • 👑", font=font_xs, fill=(244, 114, 182))
+        draw.text((dock_x + 16, dock_y + 144), "Filters: Noir • Sunset • Phosphor • Cosmic", font=font_xs, fill=(148, 163, 184))
 
 def draw_facilitator_sidebar(draw, active_phase_idx, phases_list):
-    # Sidebar container
     draw.rectangle([0, 54, 240, HEIGHT], fill=(11, 17, 32), outline=(30, 41, 59), width=1)
     draw.text((16, 70), "FACILITATOR GUIDE", font=font_xs, fill=(148, 163, 184))
 
@@ -106,13 +173,11 @@ def draw_facilitator_sidebar(draw, active_phase_idx, phases_list):
         border = (99, 102, 241) if is_active else ((51, 65, 85) if not is_passed else (34, 197, 94))
         draw_rounded_rect(draw, [12, py, 228, py + 52], 8, fill=bg, outline=border, width=2 if is_active else 1)
 
-        # Step badge
         step_col = (99, 102, 241) if is_active else ((100, 116, 139) if not is_passed else (34, 197, 94))
         draw.ellipse([20, py + 16, 40, py + 36], fill=step_col)
         badge_text = "✓" if is_passed else str(idx + 1)
         draw.text((27, py + 19), badge_text, font=font_xs, fill=(255, 255, 255))
 
-        # Title & desc
         tcol = (255, 255, 255) if is_active else (203, 213, 225)
         draw.text((48, py + 10), title, font=font_sm_bold if is_active else font_sm, fill=tcol)
         draw.text((48, py + 28), desc[:24] + "...", font=font_xs, fill=(148, 163, 184))
@@ -141,18 +206,13 @@ def draw_sticky_note(img, x, y, stype, text, votes=0, rotation=0, scale=1.0):
     w = int(140 * scale)
     h = int(110 * scale)
 
-    # Temporary image for rotation
     s_img = Image.new('RGBA', (w + 16, h + 16), (0, 0, 0, 0))
     s_draw = ImageDraw.Draw(s_img)
 
-    # Shadow
     s_draw.rectangle([6, 6, w + 6, h + 6], fill=(0, 0, 0, 70))
-    # Body
     s_draw.rectangle([2, 2, w + 2, h + 2], fill=cfg['bg'], outline=(255, 255, 255, 100), width=1)
-    # Type tag
     s_draw.text((8, 6), cfg['label'], font=font_xs, fill=(255, 255, 255, 180))
 
-    # Text wrapping
     words = text.split(' ')
     lines = []
     cur = ""
@@ -168,7 +228,6 @@ def draw_sticky_note(img, x, y, stype, text, votes=0, rotation=0, scale=1.0):
     for l_idx, line in enumerate(lines[:3]):
         s_draw.text((8, 26 + l_idx * 16), line, font=font_sm_bold, fill=cfg['fg'])
 
-    # Dot votes
     if votes > 0:
         s_draw.ellipse([w - 24, h - 24, w - 4, h - 4], fill=(225, 29, 72))
         s_draw.text((w - 18, h - 22), str(votes), font=font_xs, fill=(255, 255, 255))
@@ -178,19 +237,39 @@ def draw_sticky_note(img, x, y, stype, text, votes=0, rotation=0, scale=1.0):
 
     img.paste(s_img, (int(x), int(y)), s_img)
 
-def draw_cursor(draw, x, y, name, color):
-    # Cursor pointer triangle
-    points = [(x, y), (x + 14, y + 10), (x + 8, y + 14), (x + 12, y + 22), (x + 7, y + 24), (x + 4, y + 15), (x, y + 18)]
+def draw_cursor(draw, x, y, name, color, is_speaking=False, aura_color=None, reaction=None, is_following=False):
+    # Round webcam circle above name tag
+    cx = int(x - 2)
+    cy = int(y - 28)
+    r = 13
+
+    if is_speaking:
+        draw.ellipse([cx - r - 3, cy - r - 3, cx + r + 3, cy + r + 3], outline=(52, 211, 153), width=3)
+    elif aura_color:
+        draw.ellipse([cx - r - 2, cy - r - 2, cx + r + 2, cy + r + 2], outline=aura_color, width=2)
+    else:
+        draw.ellipse([cx - r - 1, cy - r - 1, cx + r + 1, cy + r + 1], outline=(30, 41, 59), width=1)
+
+    draw.ellipse([cx - r, cy - r, cx + r, cy + r], fill=color)
+    initials = "".join([part[0] for part in name.split() if part])[:2].upper()
+    draw.text((cx - 7, cy - 6), initials, font=font_xs, fill=(255, 255, 255))
+
+    if reaction:
+        draw.text((cx - 6, cy - 24), reaction, font=font_xs, fill=(255, 255, 255))
+
+    # Pointer triangle
+    points = [(int(x), int(y)), (int(x + 14), int(y + 10)), (int(x + 8), int(y + 14)), (int(x + 12), int(y + 22)), (int(x + 7), int(y + 24)), (int(x + 4), int(y + 15)), (int(x), int(y + 18))]
     draw.polygon(points, fill=color, outline=(255, 255, 255))
+
     # Name tag
-    tag_w = len(name) * 7 + 12
-    draw_rounded_rect(draw, [x + 14, y + 14, x + 14 + tag_w, y + 32], 4, fill=color)
-    draw.text((x + 18, y + 16), name, font=font_xs, fill=(255, 255, 255))
+    tag_text = name + (" • Following" if is_following else "")
+    tag_w = len(tag_text) * 7 + 14
+    draw_rounded_rect(draw, [int(x + 14), int(y + 14), int(x + 14 + tag_w), int(y + 32)], 4, fill=color)
+    draw.text((int(x + 18), int(y + 16)), tag_text, font=font_xs, fill=(255, 255, 255))
 
 def draw_pivotal_line(draw, x, name):
     for y in range(60, HEIGHT - 60, 10):
         draw.line([(x, y), (x, y + 5)], fill=(239, 68, 68), width=3)
-    # Milestone banner
     draw_rounded_rect(draw, [x - 70, 70, x + 70, 96], 6, fill=(153, 27, 27), outline=(239, 68, 68), width=1)
     draw.text((x - 62, 75), f"🏁 {name}", font=font_xs, fill=(255, 255, 255))
 
@@ -232,33 +311,26 @@ def render_big_picture_video(output_path):
         if t >= 8.5: active_phase = 3
         if t >= 10.5: active_phase = 4
 
-        # Swimlanes in stage 4+
         if t >= 8.5:
-            lane_prog = min(1.0, (t - 8.5) * 2.0)
             draw_swimlane(draw, 140, 180, "Customer Commerce", (59, 130, 246))
             draw_swimlane(draw, 340, 180, "Logistics & Fulfillment", (16, 185, 129))
 
-        # Pivotal line in stage 2+
         if t >= 3.0:
             draw_pivotal_line(draw, 720, "Pivotal: Order Shipped")
 
-        # Stickies placement & movement
         for e_idx, ev in enumerate(events_data):
             spawn_time = e_idx * 0.4
             if t < spawn_time:
                 continue
             if t < 3.0:
-                # Chaotic stage
                 pop = min(1.0, (t - spawn_time) * 3)
                 draw_sticky_note(img, ev['tx'], ev['ty'], 'event', ev['text'], scale=pop)
             else:
-                # Timeline alignment interpolation
                 move_prog = ease_in_out(min(1.0, (t - 3.0) / 1.5))
                 cur_x = ev['tx'] + (ev['fx'] - ev['tx']) * move_prog
                 cur_y = ev['ty'] + (ev['fy'] - ev['ty']) * move_prog
                 draw_sticky_note(img, cur_x, cur_y, 'event', ev['text'], scale=1.0)
 
-        # Hotspots in stage 3
         if t >= 6.0:
             pop_h = min(1.0, (t - 6.0) * 3)
             votes_1 = min(5, int((t - 6.5) * 3)) if t >= 6.5 else 0
@@ -266,36 +338,29 @@ def render_big_picture_video(output_path):
             draw_sticky_note(img, 450, 310, 'hotspot', 'Payment Gateway Timeout Spike', votes=votes_1, rotation=-6, scale=pop_h)
             draw_sticky_note(img, 760, 310, 'hotspot', 'Manual Picking Bottleneck', votes=votes_2, rotation=5, scale=pop_h)
 
-        # Users and Systems in stage 4
         if t >= 8.5:
             draw_sticky_note(img, 320, 260, 'user', 'Online Shopper', scale=1.0)
             draw_sticky_note(img, 920, 260, 'system', 'Courier DHL API', scale=1.0)
 
-        # Opportunity sticky in stage 5
         if t >= 10.5:
             draw_sticky_note(img, 580, 520, 'opportunity', 'Automated 1-Click Retry', scale=1.0)
 
-        # Animated cursors
-        # Cursor 1: Sarah
+        # Cursors with webcam bubbles
         c1_x = 350 + math.sin(t * 1.5) * 180 + t * 25
         c1_y = 220 + math.cos(t * 2.0) * 80
-        draw_cursor(draw, c1_x, c1_y, "Sarah (Lead Domain Expert)", (249, 115, 22))
+        draw_cursor(draw, c1_x, c1_y, "Sarah (Lead Domain Expert)", (249, 115, 22), is_speaking=(4.0 <= t < 8.0), reaction="💡")
 
-        # Cursor 2: Alex
         c2_x = 750 + math.cos(t * 1.8) * 140
         c2_y = 300 + math.sin(t * 1.4) * 90
-        draw_cursor(draw, c2_x, c2_y, "Alex (System Architect)", (14, 165, 233))
+        draw_cursor(draw, c2_x, c2_y, "Alex (System Architect)", (14, 165, 233), aura_color=(34, 211, 238), reaction="👑")
 
-        # UI Overlays
         draw_facilitator_sidebar(draw, active_phase, phases)
         timer_str = f"14:{max(0, 50 - int(t * 3)):02d}"
-        draw_header(draw, "Global Retail Big Picture Session", "Big Picture", timer_str=timer_str, voting_active=(6.0 <= t < 8.5))
+        draw_header(draw, "Global Retail Big Picture Session", "Big Picture", timer_str=timer_str, voting_active=(6.0 <= t < 8.5), call_active=True)
         draw_sticky_palette(draw)
 
-        # Frame save
         img.save(os.path.join(frames_dir, f"frame_{frame_idx:04d}.png"))
 
-    # Encode with FFmpeg + synth audio
     cmd = [
         'ffmpeg', '-y',
         '-framerate', str(FPS),
@@ -306,7 +371,6 @@ def render_big_picture_video(output_path):
         output_path
     ]
     subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    # Cleanup frames
     for f in os.listdir(frames_dir):
         os.remove(os.path.join(frames_dir, f))
     os.rmdir(frames_dir)
@@ -336,30 +400,23 @@ def render_process_modelling_video(output_path):
         if t >= 7.5: active_phase = 3
         if t >= 10.0: active_phase = 4
 
-        # Swimlane for Process Flow
         draw_swimlane(draw, 140, 280, "Order-To-Cash Process Flow", (147, 51, 234))
 
-        # Command-Event-Policy Loop elements
-        # 1. User & Command (t >= 1.0)
         if t >= 1.0:
             draw_sticky_note(img, 280, 180, 'user', 'Buyer (Customer)', scale=1.0)
             draw_sticky_note(img, 280, 280, 'command', 'Submit Order', scale=1.0)
 
-        # 2. Aggregate & Event 1 (t >= 2.5)
         if t >= 2.5:
             draw_sticky_note(img, 430, 280, 'aggregate', 'Order Aggregate', scale=1.0)
             draw_sticky_note(img, 580, 280, 'event', 'Order Placed', scale=1.0)
-            # Arrow / flow connection
             draw.line([(390, 310), (420, 310)], fill=(99, 102, 241), width=2)
             draw.line([(540, 310), (570, 310)], fill=(234, 88, 12), width=2)
 
-        # 3. Read Model (t >= 5.0)
         if t >= 5.0:
             draw_sticky_note(img, 280, 440, 'readmodel', 'Inventory Catalog View', scale=1.0)
             draw_sticky_note(img, 580, 440, 'readmodel', 'Order Summary Screen', scale=1.0)
             draw.line([(330, 430), (330, 370)], fill=(34, 197, 94), width=2)
 
-        # 4. Policy & Next Command (t >= 7.5)
         if t >= 7.5:
             draw_sticky_note(img, 730, 280, 'policy', 'Whenever Order Placed -> Reserve Stock', scale=1.0)
             draw_sticky_note(img, 880, 280, 'command', 'Reserve Warehouse Items', scale=1.0)
@@ -368,24 +425,22 @@ def render_process_modelling_video(output_path):
             draw.line([(840, 310), (870, 310)], fill=(37, 99, 235), width=2)
             draw.line([(990, 310), (1020, 310)], fill=(234, 88, 12), width=2)
 
-        # 5. Hotspot & Alternative flow (t >= 10.0)
         if t >= 10.0:
             draw_sticky_note(img, 880, 420, 'hotspot', 'Out of Stock Race Condition', votes=4, rotation=5, scale=1.0)
             draw_sticky_note(img, 1030, 420, 'event', 'Stock Reservation Failed', scale=1.0)
 
-        # Cursors
+        # Cursors with webcam bubbles
         c1_x = 420 + math.sin(t * 1.6) * 120 + t * 30
         c1_y = 260 + math.cos(t * 2.1) * 60
-        draw_cursor(draw, c1_x, c1_y, "Elena (Process Lead)", (168, 85, 247))
+        draw_cursor(draw, c1_x, c1_y, "Elena (Process Lead)", (168, 85, 247), is_speaking=(3.0 <= t < 7.0), reaction="⚡")
 
         c2_x = 650 + math.cos(t * 1.3) * 160
         c2_y = 340 + math.sin(t * 1.7) * 70
-        draw_cursor(draw, c2_x, c2_y, "Marc (Backend Dev)", (34, 197, 94))
+        draw_cursor(draw, c2_x, c2_y, "Marc (Backend Dev)", (34, 197, 94), aura_color=(52, 211, 153), reaction="🚀")
 
-        # UI Overlays
         draw_facilitator_sidebar(draw, active_phase, phases)
         timer_str = f"22:{max(0, 45 - int(t * 2)):02d}"
-        draw_header(draw, "Order Fulfillment Process Deep Dive", "Process Modelling", timer_str=timer_str, voting_active=(10.0 <= t))
+        draw_header(draw, "Order Fulfillment Process Deep Dive", "Process Modelling", timer_str=timer_str, voting_active=(10.0 <= t), call_active=True)
         draw_sticky_palette(draw)
 
         img.save(os.path.join(frames_dir, f"frame_{frame_idx:04d}.png"))
@@ -429,51 +484,44 @@ def render_software_design_video(output_path):
         if t >= 7.5: active_phase = 3
         if t >= 10.0: active_phase = 4
 
-        # Swimlanes for Bounded Contexts
         draw_swimlane(draw, 140, 240, "Order Management Bounded Context", (59, 130, 246))
         draw_swimlane(draw, 400, 240, "Billing & Payment Bounded Context", (16, 185, 129))
 
-        # Stage 1: Aggregates
         if t >= 1.0:
             draw_sticky_note(img, 280, 200, 'aggregate', 'Order Aggregate Root', scale=1.0)
             draw_sticky_note(img, 280, 460, 'aggregate', 'Payment Transaction Root', scale=1.0)
 
-        # Stage 2: Invariants
         if t >= 2.5:
             draw_sticky_note(img, 430, 200, 'policy', 'Invariant: Max order items <= 50', scale=1.0)
             draw_sticky_note(img, 430, 460, 'policy', 'Invariant: Currency must match ISO-4217', scale=1.0)
 
-        # Stage 3: Commands & Domain Events
         if t >= 5.0:
             draw_sticky_note(img, 580, 200, 'command', 'CreateOrderCmd', scale=1.0)
             draw_sticky_note(img, 730, 200, 'event', 'OrderCreatedEvt', scale=1.0)
             draw_sticky_note(img, 580, 460, 'command', 'AuthorizeCardCmd', scale=1.0)
             draw_sticky_note(img, 730, 460, 'event', 'CardAuthorizedEvt', scale=1.0)
 
-        # Stage 4: Read Models / Projections
         if t >= 7.5:
             draw_sticky_note(img, 880, 200, 'readmodel', 'ActiveOrdersProjection', scale=1.0)
             draw_sticky_note(img, 880, 460, 'readmodel', 'BillingLedgerView', scale=1.0)
 
-        # Stage 5: Cross-Context Event Integration
         if t >= 10.0:
             draw_sticky_note(img, 1030, 320, 'system', 'Kafka Event Bus Broker', scale=1.0)
             draw.line([(840, 240), (1020, 340)], fill=(234, 88, 12), width=2)
             draw.line([(840, 500), (1020, 380)], fill=(234, 88, 12), width=2)
 
-        # Cursors
+        # Cursors with webcam bubbles
         c1_x = 520 + math.cos(t * 1.7) * 140
         c1_y = 230 + math.sin(t * 1.5) * 80
-        draw_cursor(draw, c1_x, c1_y, "David (Software Architect)", (14, 165, 233))
+        draw_cursor(draw, c1_x, c1_y, "David (Software Architect)", (14, 165, 233), aura_color=(34, 211, 238), reaction="👑")
 
         c2_x = 780 + math.sin(t * 1.4) * 110
         c2_y = 380 + math.cos(t * 1.8) * 70
-        draw_cursor(draw, c2_x, c2_y, "Sarah (Lead Engineer)", (249, 115, 22))
+        draw_cursor(draw, c2_x, c2_y, "Sarah (Lead Engineer)", (249, 115, 22), is_speaking=(4.0 <= t < 9.0), reaction="💡")
 
-        # UI Overlays
         draw_facilitator_sidebar(draw, active_phase, phases)
         timer_str = f"18:{max(0, 55 - int(t * 2)):02d}"
-        draw_header(draw, "Microservices & Aggregate Boundaries", "Software Design", timer_str=timer_str, voting_active=False)
+        draw_header(draw, "Microservices & Aggregate Boundaries", "Software Design", timer_str=timer_str, voting_active=False, call_active=True)
         draw_sticky_palette(draw)
 
         img.save(os.path.join(frames_dir, f"frame_{frame_idx:04d}.png"))
@@ -496,109 +544,106 @@ def render_software_design_video(output_path):
 def render_ad_promo_video(output_path):
     print(f"Rendering Commercial Ad Promo to {output_path}...")
     frames_dir = tempfile.mkdtemp()
-    num_frames = FPS * 14  # 14 seconds
+    num_frames = FPS * 15  # 15 seconds
 
     for frame_idx in range(num_frames):
         t = frame_idx / float(FPS)
         img = Image.new('RGB', (WIDTH, HEIGHT), color=(9, 13, 22))
         draw = ImageDraw.Draw(img)
 
-        if t < 3.2:
+        if t < 3.5:
             # Scene 1: High-energy Title & Hook
             draw_canvas_grid(draw, WIDTH, HEIGHT, offset_x=t * 20, offset_y=t * 10)
 
-            # Glowing badge
-            badge_w = 400
+            badge_w = 460
             bx = (WIDTH - badge_w) // 2
-            draw_rounded_rect(draw, [bx, 140, bx + badge_w, 175], 16, fill=(30, 41, 59, 180), outline=(245, 158, 11), width=1)
-            draw.text((bx + 35, 148), "⚡ THE MODERN DOMAIN DISCOVERY PLATFORM", font=font_xs, fill=(251, 191, 36))
+            draw_rounded_rect(draw, [bx, 130, bx + badge_w, 168], 16, fill=(30, 41, 59, 180), outline=(245, 158, 11), width=1)
+            draw.text((bx + 30, 142), "⚡ COLLABORATIVE DDD CANVAS + SERVERLESS P2P VIDEO", font=font_xs, fill=(251, 191, 36))
 
-            # Main Hero Headline
-            draw.text((WIDTH // 2 - 280, 210), "Model Complex Software", font=font_hero, fill=(255, 255, 255))
-            draw.text((WIDTH // 2 - 220, 270), "At The Speed Of Thought.", font=font_hero, fill=(249, 115, 22))
+            draw.text((WIDTH // 2 - 280, 200), "Model Complex Software", font=font_hero, fill=(255, 255, 255))
+            draw.text((WIDTH // 2 - 220, 260), "At The Speed Of Thought.", font=font_hero, fill=(249, 115, 22))
 
-            # Subtitle
-            draw.text((WIDTH // 2 - 320, 360), "Alberto Brandolini's EventStorming — Re-engineered for remote engineering teams.", font=font_base, fill=(148, 163, 184))
+            draw.text((WIDTH // 2 - 340, 350), "Alberto Brandolini's EventStorming — With Serverless P2P Video Mesh & Around Effects.", font=font_base, fill=(148, 163, 184))
 
-            # Metric pills
             pills = [
                 ("⚡ 0 Sign-in Needed", (59, 130, 246)),
-                ("🌐 Cloudflare Durable Objects", (249, 115, 22)),
-                ("⏱️ Sub-5ms Realtime Multi-Cursor", (16, 185, 129)),
+                ("🎙️ Serverless P2P Video Mesh", (16, 185, 129)),
+                ("✨ Around Effects & Follow", (236, 72, 153)),
             ]
             for p_idx, (p_text, p_col) in enumerate(pills):
-                px = 180 + p_idx * 320
-                draw_rounded_rect(draw, [px, 440, px + 280, 485], 10, fill=(15, 23, 42), outline=p_col, width=2)
-                draw.text((px + 20, 454), p_text, font=font_sm_bold, fill=(255, 255, 255))
+                px = 120 + p_idx * 355
+                draw_rounded_rect(draw, [px, 430, px + 325, 475], 10, fill=(15, 23, 42), outline=p_col, width=2)
+                draw.text((px + 20, 444), p_text, font=font_sm_bold, fill=(255, 255, 255))
 
-        elif t < 7.0:
-            # Scene 2: Live Canvas in Action
+        elif t < 7.5:
+            # Scene 2: Live Canvas in Action with P2P Video & Follow Mode
             draw_canvas_grid(draw, WIDTH, HEIGHT)
-            draw_header(draw, "Fintech Payment Pipeline Modeling", "Process Modelling", timer_str="14:32", voting_active=True)
+            is_following = (t >= 5.0)
+            draw_header(draw, "Fintech Payment Pipeline Modeling", "Process Modelling", timer_str="14:32", voting_active=True, call_active=True, following_name="Sarah (Product Lead)" if is_following else None)
             draw_sticky_palette(draw)
 
-            # Draw stickies in live action
-            draw_sticky_note(img, 300, 160, 'user', 'Cardholder', scale=1.0)
-            draw_sticky_note(img, 300, 280, 'command', 'Initiate Checkout', scale=1.0)
-            draw_sticky_note(img, 470, 280, 'aggregate', 'Order Aggregate', scale=1.0)
-            draw_sticky_note(img, 640, 280, 'event', 'Order Initiated', scale=1.0)
-            draw_sticky_note(img, 810, 280, 'policy', 'Whenever Initiated -> Preauth', scale=1.0)
-            draw_sticky_note(img, 980, 280, 'hotspot', '3D Secure SMS Latency', votes=7, rotation=-5, scale=1.0)
+            # Draw stickies
+            draw_sticky_note(img, 280, 180, 'user', 'Cardholder', scale=1.0)
+            draw_sticky_note(img, 280, 290, 'command', 'Initiate Checkout', scale=1.0)
+            draw_sticky_note(img, 450, 290, 'aggregate', 'Order Aggregate', scale=1.0)
+            draw_sticky_note(img, 620, 290, 'event', 'Order Initiated', scale=1.0)
+            draw_sticky_note(img, 790, 290, 'policy', 'Whenever Initiated -> Preauth', scale=1.0)
+            draw_sticky_note(img, 960, 290, 'hotspot', '3D Secure SMS Latency', votes=7, rotation=-5, scale=1.0)
 
-            # Floating cursor storm
-            c1_x = 450 + math.sin(t * 3.5) * 160
-            c1_y = 260 + math.cos(t * 3.0) * 80
-            draw_cursor(draw, c1_x, c1_y, "Sarah (Product Lead)", (249, 115, 22))
+            # Floating Around Video Call Dock
+            draw_videocall_dock(draw, t, show_effects=(5.4 <= t < 7.3))
 
-            c2_x = 750 + math.cos(t * 2.8) * 180
-            c2_y = 310 + math.sin(t * 3.2) * 90
-            draw_cursor(draw, c2_x, c2_y, "Alex (Cloudflare DO Architect)", (14, 165, 233))
+            # Floating cursor storm with round webcam avatars
+            c1_x = 450 + math.sin(t * 3.5) * 140
+            c1_y = 260 + math.cos(t * 3.0) * 70
+            draw_cursor(draw, c1_x, c1_y, "Sarah (Product Lead)", (249, 115, 22), is_speaking=True, reaction="💡")
 
-            c3_x = 600 + math.sin(t * 2.2) * 200
-            c3_y = 420 + math.cos(t * 2.4) * 60
-            draw_cursor(draw, c3_x, c3_y, "Elena (Domain Expert)", (168, 85, 247))
+            c2_x = c1_x - 120 if is_following else 750 + math.cos(t * 2.8) * 160
+            c2_y = c1_y + 40 if is_following else 310 + math.sin(t * 3.2) * 80
+            draw_cursor(draw, c2_x, c2_y, "Alex (DO Architect)", (14, 165, 233), aura_color=(34, 211, 238), reaction="👑", is_following=is_following)
 
-            # Floating highlight callout card
-            draw_rounded_rect(draw, [WIDTH // 2 - 250, 490, WIDTH // 2 + 250, 560], 12, fill=(15, 23, 42, 230), outline=(99, 102, 241), width=2)
-            draw.text((WIDTH // 2 - 220, 505), "✨ Strict Brandolini Geometries & Syntax", font=font_base_bold, fill=(255, 255, 255))
-            draw.text((WIDTH // 2 - 220, 530), "Events • Commands • Aggregates • Policies • Hotspots", font=font_xs, fill=(148, 163, 184))
+            c3_x = 580 + math.sin(t * 2.2) * 170
+            c3_y = 440 + math.cos(t * 2.4) * 50
+            draw_cursor(draw, c3_x, c3_y, "Elena (Domain Expert)", (168, 85, 247), aura_color=(236, 72, 153), reaction="🌸")
 
-        elif t < 10.5:
-            # Scene 3: The 3 Methodologies Highlighted
+            # Feature badge overlay
+            draw_rounded_rect(draw, [280, 480, 780, 545], 12, fill=(15, 23, 42, 230), outline=(99, 102, 241), width=2)
+            draw.text((300, 494), "✨ Live WebRTC Mesh + Around.co Webcam Overlays", font=font_base_bold, fill=(255, 255, 255))
+            draw.text((300, 518), "Filters (Cyberpunk, Noir) • Glow Auras • 1-Click Follow Mode", font=font_xs, fill=(148, 163, 184))
+
+        elif t < 11.5:
+            # Scene 3: Feature Highlights
             draw_canvas_grid(draw, WIDTH, HEIGHT)
-            draw.text((WIDTH // 2 - 260, 80), "Three Methodologies in One Tool", font=font_title, fill=(255, 255, 255))
+            draw.text((WIDTH // 2 - 270, 75), "Engineered for Remote DDD Workshops", font=font_title, fill=(255, 255, 255))
 
             cards = [
-                ("1. Big Picture", "Explore entire enterprise landscape", "Events • Hotspots • Pivotal Lines", (249, 115, 22)),
-                ("2. Process Modelling", "Map end-to-end operational workflows", "Commands • Policies • Read Models", (147, 51, 234)),
-                ("3. Software Design", "Architect DDD aggregates & bounded contexts", "Aggregates • Invariants • CQRS", (59, 130, 246)),
+                ("1. Brandolini DDD Syntax", "Strict geometries & color codes", "Events • Hotspots • Roles • Policies", (249, 115, 22)),
+                ("2. Serverless P2P Video Mesh", "Zero audio/video server records", "Around Filters • Neon Auras • Badges", (236, 72, 153)),
+                ("3. Breakouts & Follow Mode", "Sub-group tables with auto-merge", "Room Audio Isolation • 1-Click Follow", (59, 130, 246)),
             ]
             for c_idx, (c_title, c_desc, c_tags, c_col) in enumerate(cards):
-                cx = 120 + c_idx * 360
-                draw_rounded_rect(draw, [cx, 160, cx + 320, 480], 16, fill=(15, 23, 42), outline=c_col, width=2)
-                draw.rectangle([cx, 160, cx + 320, 175], fill=c_col)
-                draw.text((cx + 24, 200), c_title, font=font_xl, fill=(255, 255, 255))
-                draw.text((cx + 24, 250), c_desc, font=font_sm, fill=(203, 213, 225))
-                draw_rounded_rect(draw, [cx + 20, 310, cx + 300, 370], 8, fill=(30, 41, 59), outline=None)
-                draw.text((cx + 30, 332), c_tags, font=font_xs, fill=(251, 191, 36))
+                cx = 80 + c_idx * 380
+                draw_rounded_rect(draw, [cx, 150, cx + 350, 490], 16, fill=(15, 23, 42), outline=c_col, width=2)
+                draw.rectangle([cx, 150, cx + 350, 165], fill=c_col)
+                draw.text((cx + 20, 190), c_title, font=font_lg, fill=(255, 255, 255))
+                draw.text((cx + 20, 240), c_desc, font=font_sm, fill=(203, 213, 225))
+                draw_rounded_rect(draw, [cx + 16, 300, cx + 334, 360], 8, fill=(30, 41, 59), outline=None)
+                draw.text((cx + 24, 322), c_tags, font=font_xs, fill=(251, 191, 36))
 
-                # Little icon / visual badge
-                draw_rounded_rect(draw, [cx + 24, 410, cx + 296, 450], 8, fill=(c_col[0], c_col[1], c_col[2], 50), outline=c_col, width=1)
-                draw.text((cx + 65, 422), "Built-in Facilitator", font=font_xs, fill=(255, 255, 255))
+                draw_rounded_rect(draw, [cx + 20, 410, cx + 330, 455], 8, fill=(c_col[0], c_col[1], c_col[2], 50), outline=c_col, width=1)
+                draw.text((cx + 50, 424), "Built-in Zero Setup", font=font_xs, fill=(255, 255, 255))
 
         else:
             # Scene 4: Call to Action / Outro
             draw_canvas_grid(draw, WIDTH, HEIGHT)
-            draw.text((WIDTH // 2 - 200, 160), "⚡ EventStormer", font=font_hero, fill=(255, 255, 255))
-            draw.text((WIDTH // 2 - 280, 240), "Start Storming in Seconds. No Signup Required.", font=font_xl, fill=(249, 115, 22))
+            draw.text((WIDTH // 2 - 200, 150), "⚡ EventStormer", font=font_hero, fill=(255, 255, 255))
+            draw.text((WIDTH // 2 - 310, 230), "Start Storming in Seconds. No Signup Required.", font=font_xl, fill=(249, 115, 22))
 
-            # Big CTA button
-            draw_rounded_rect(draw, [WIDTH // 2 - 180, 320, WIDTH // 2 + 180, 390], 14, fill=(249, 115, 22), outline=(255, 255, 255), width=2)
-            draw.text((WIDTH // 2 - 140, 342), "Launch Workspace ➔", font=font_xl, fill=(15, 23, 42))
+            draw_rounded_rect(draw, [WIDTH // 2 - 180, 310, WIDTH // 2 + 180, 380], 14, fill=(249, 115, 22), outline=(255, 255, 255), width=2)
+            draw.text((WIDTH // 2 - 140, 332), "Launch Workspace ➔", font=font_xl, fill=(15, 23, 42))
 
-            # Trust badges
-            draw.text((WIDTH // 2 - 270, 440), "✓ Export to Markdown & Miro   ✓ Dot-Voting   ✓ Facilitator Timers", font=font_base, fill=(148, 163, 184))
-            draw.text((WIDTH // 2 - 150, 490), "Built on Cloudflare Workers & Durable Objects", font=font_xs, fill=(100, 116, 139))
+            draw.text((WIDTH // 2 - 320, 430), "✓ P2P Video Mesh   ✓ Around Filters & Auras   ✓ Follow Mode   ✓ Durable Objects", font=font_base, fill=(148, 163, 184))
+            draw.text((WIDTH // 2 - 160, 480), "Zero account needed • Sub-5ms multiplayer", font=font_xs, fill=(100, 116, 139))
 
         img.save(os.path.join(frames_dir, f"frame_{frame_idx:04d}.png"))
 

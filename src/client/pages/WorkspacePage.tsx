@@ -49,18 +49,24 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
   workspaceId,
   initialTemplateKey,
 }) => {
-  // User profile from localStorage or modal
+  // User profile: name and color remembered from localStorage, but clientId is ALWAYS unique per browser tab!
   const [user, setUser] = useState<UserProfile>(() => {
+    const tabClientId = crypto.randomUUID();
     const saved = localStorage.getItem('eventstormer_user');
     if (saved) {
       try {
-        return JSON.parse(saved) as UserProfile;
+        const parsed = JSON.parse(saved);
+        return {
+          clientId: tabClientId,
+          name: parsed.name || `Stormer #${Math.floor(100 + Math.random() * 900)}`,
+          color: parsed.color || '#f97316',
+        };
       } catch {
         // Fallback
       }
     }
     return {
-      clientId: crypto.randomUUID(),
+      clientId: tabClientId,
       name: `Stormer #${Math.floor(100 + Math.random() * 900)}`,
       color: '#f97316',
     };

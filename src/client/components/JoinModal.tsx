@@ -34,7 +34,7 @@ export const JoinModal: React.FC<JoinModalProps> = ({ isOpen, onJoin }) => {
       name: finalName,
       color: selectedColor,
     };
-    localStorage.setItem('eventstormer_user', JSON.stringify(profile));
+    localStorage.setItem('eventstormer_user', JSON.stringify({ name: profile.name, color: profile.color }));
     onJoin(profile);
   };
 

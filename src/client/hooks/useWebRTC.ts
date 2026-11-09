@@ -346,6 +346,22 @@ export function useWebRTC({
 
       const pc = createPeerConnection(peerId);
 
+      // Immediately register the peer in remotePeers so they appear in participant count and call dock
+      const peerCursor = peersRef.current.find((p) => p.clientId === peerId);
+      setRemotePeers((prev) => {
+        if (prev.has(peerId)) return prev;
+        const next = new Map(prev);
+        next.set(peerId, {
+          clientId: peerId,
+          stream: new MediaStream(),
+          peer: peerCursor,
+          isSpeaking: false,
+          isVideoOff: true,
+          isMuted: true,
+          isScreenSharing: false,
+        });
+        return next;
+      });
       // Notify new peer if local user is currently sharing screen
       if (screenStreamRef.current) {
         sendMessage({
@@ -399,6 +415,22 @@ export function useWebRTC({
         pc = createPeerConnection(fromClientId);
       }
 
+      // Ensure fromClientId is registered in remotePeers
+      const signalPeerCursor = peersRef.current.find((p) => p.clientId === fromClientId);
+      setRemotePeers((prev) => {
+        if (prev.has(fromClientId)) return prev;
+        const next = new Map(prev);
+        next.set(fromClientId, {
+          clientId: fromClientId,
+          stream: new MediaStream(),
+          peer: signalPeerCursor,
+          isSpeaking: false,
+          isVideoOff: true,
+          isMuted: true,
+          isScreenSharing: false,
+        });
+        return next;
+      });
       // Handle remote screenshare state broadcasts
       if (signal.type === 'screenshare') {
         const isSharing = !!signal.data?.isSharing;
