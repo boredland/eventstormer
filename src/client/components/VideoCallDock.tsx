@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import {
   Mic,
   MicOff,
@@ -87,23 +87,41 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
   onClick,
 }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  // Callback ref: binds srcObject on mount and ensures DOM muted property is true for autoplay
+  const videoNodeRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && stream) {
+      if (node.srcObject !== stream) {
+        node.srcObject = stream;
+      }
+      if (isLocal) {
+        node.muted = true;
+      }
+      node.play().catch(() => {});
+    }
+  }, [stream, isLocal]);
 
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !stream) return;
-    // Only assign srcObject when stream actually changes — re-assigning same stream stops playback
     if (el.srcObject !== stream) {
       el.srcObject = stream;
     }
+    if (isLocal) {
+      el.muted = true;
+    }
     if (el.paused) el.play().catch(() => {});
-  }, [stream]);
-
+  }, [stream, isLocal]);
   // Re-attempt playback when remote tracks are added to the stream
   useEffect(() => {
     const el = videoRef.current;
     if (!el || !stream) return;
-    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
-    stream.addEventListener('addtrack', onLoaded);
+    const onLoaded = () => {
+      if (el) {
+        if (isLocal) el.muted = true;
+        if (el.paused) el.play().catch(() => {});
+      }
+    };
     for (const track of stream.getTracks()) {
       track.addEventListener('unmute', onLoaded);
     }
@@ -157,7 +175,7 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
         <div className="absolute inset-0 rounded-full overflow-hidden">
           {/* Always-mounted video element for continuous audio/video playback */}
           <video
-            ref={videoRef}
+            ref={videoNodeRef}
             autoPlay
             playsInline
             muted={isLocal}
@@ -326,6 +344,29 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
     }
   }, [hasAnyScreenShare]);
 
+  // Callback ref for screen viewer: binds immediately on mount and sets DOM muted = true
+  const screenVideoNodeRef = useCallback((node: HTMLVideoElement | null) => {
+    screenVideoRef.current = node;
+    if (node && activeFeed?.stream) {
+      if (node.srcObject !== activeFeed.stream) {
+        node.srcObject = activeFeed.stream;
+      }
+      node.muted = true;
+      node.play().catch(() => {});
+    }
+  }, [activeFeed?.stream]);
+
+  const fullscreenVideoNodeRef = useCallback((node: HTMLVideoElement | null) => {
+    fullscreenVideoRef.current = node;
+    if (node && activeFeed?.stream) {
+      if (node.srcObject !== activeFeed.stream) {
+        node.srcObject = activeFeed.stream;
+      }
+      node.muted = true;
+      node.play().catch(() => {});
+    }
+  }, [activeFeed?.stream]);
+
   // Keep video streams connected to video elements
   useEffect(() => {
     const el = screenVideoRef.current;
@@ -333,6 +374,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
     if (el.srcObject !== activeFeed.stream) {
       el.srcObject = activeFeed.stream;
     }
+    el.muted = true;
     if (el.paused) el.play().catch(() => {});
   }, [activeFeed]);
 
@@ -341,11 +383,22 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
     const el = screenVideoRef.current;
     const stream = activeFeed?.stream;
     if (!el || !stream) return;
-    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    const onLoaded = () => {
+      if (el) {
+        el.muted = true;
+        if (el.paused) el.play().catch(() => {});
+      }
+    };
     stream.addEventListener('addtrack', onLoaded);
+    for (const track of stream.getTracks()) {
+      track.addEventListener('unmute', onLoaded);
+    }
     el.addEventListener('loadeddata', onLoaded);
     return () => {
       stream.removeEventListener('addtrack', onLoaded);
+      for (const track of stream.getTracks()) {
+        track.removeEventListener('unmute', onLoaded);
+      }
       el.removeEventListener('loadeddata', onLoaded);
     };
   }, [activeFeed?.stream]);
@@ -356,6 +409,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
     if (el.srcObject !== activeFeed.stream) {
       el.srcObject = activeFeed.stream;
     }
+    el.muted = true;
     if (el.paused) el.play().catch(() => {});
   }, [activeFeed, isFullscreen]);
 
@@ -364,11 +418,22 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
     const el = fullscreenVideoRef.current;
     const stream = activeFeed?.stream;
     if (!el || !stream || !isFullscreen) return;
-    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    const onLoaded = () => {
+      if (el) {
+        el.muted = true;
+        if (el.paused) el.play().catch(() => {});
+      }
+    };
     stream.addEventListener('addtrack', onLoaded);
+    for (const track of stream.getTracks()) {
+      track.addEventListener('unmute', onLoaded);
+    }
     el.addEventListener('loadeddata', onLoaded);
     return () => {
       stream.removeEventListener('addtrack', onLoaded);
+      for (const track of stream.getTracks()) {
+        track.removeEventListener('unmute', onLoaded);
+      }
       el.removeEventListener('loadeddata', onLoaded);
     };
   }, [activeFeed?.stream, isFullscreen]);
@@ -426,7 +491,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
 
           <div className="flex-1 flex items-center justify-center p-2 min-h-0">
             <video
-              ref={fullscreenVideoRef}
+              ref={fullscreenVideoNodeRef}
               autoPlay
               playsInline
               muted
@@ -496,7 +561,7 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
             </div>
             <div className="relative aspect-video bg-black flex items-center justify-center">
               <video
-                ref={screenVideoRef}
+                ref={screenVideoNodeRef}
                 autoPlay
                 playsInline
                 muted

@@ -942,10 +942,15 @@ export function useWebRTC({
 
       const camTrack = originalCamTrackRef.current;
       for (const pc of peerConnectionsRef.current.values()) {
-        const senders = pc.getSenders();
-        const videoSender = senders.find((s) => s.track?.kind === 'video');
-        if (videoSender && camTrack) {
-          videoSender.replaceTrack(camTrack).catch(() => {});
+        const tx = pc.getTransceivers().find((t) => t.receiver.track.kind === 'video');
+        if (tx) {
+          if (camTrack) {
+            tx.direction = 'sendrecv';
+            tx.sender.replaceTrack(camTrack).catch(() => {});
+          } else {
+            tx.sender.replaceTrack(null).catch(() => {});
+            tx.direction = 'recvonly';
+          }
         }
       }
     } else {
@@ -977,13 +982,12 @@ export function useWebRTC({
         // Replace video track in all active peer connections
         if (screenVideoTrack) {
           for (const pc of peerConnectionsRef.current.values()) {
-            const senders = pc.getSenders();
-            const videoSender = senders.find((s) => s.track?.kind === 'video');
-            if (videoSender) {
-              videoSender.replaceTrack(screenVideoTrack).catch(() => {});
-            } else if (screenStreamRef.current) {
-              // No video sender (listen-only mode) — add the screen track as a new sender
-              try { pc.addTrack(screenVideoTrack, screenStreamRef.current); } catch {}
+            const tx = pc.getTransceivers().find((t) => t.receiver.track.kind === 'video');
+            if (tx) {
+              tx.direction = 'sendrecv';
+              tx.sender.replaceTrack(screenVideoTrack).catch(() => {});
+            } else {
+              try { pc.addTrack(screenVideoTrack, displayStream); } catch {}
             }
           }
 
@@ -1007,10 +1011,15 @@ export function useWebRTC({
 
             const camTrack = originalCamTrackRef.current;
             for (const pc of peerConnectionsRef.current.values()) {
-              const senders = pc.getSenders();
-              const videoSender = senders.find((s) => s.track?.kind === 'video');
-              if (videoSender && camTrack) {
-                videoSender.replaceTrack(camTrack).catch(() => {});
+              const tx = pc.getTransceivers().find((t) => t.receiver.track.kind === 'video');
+              if (tx) {
+                if (camTrack) {
+                  tx.direction = 'sendrecv';
+                  tx.sender.replaceTrack(camTrack).catch(() => {});
+                } else {
+                  tx.sender.replaceTrack(null).catch(() => {});
+                  tx.direction = 'recvonly';
+                }
               }
             }
           };

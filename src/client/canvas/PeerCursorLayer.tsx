@@ -19,6 +19,7 @@ const PeerVideoElement: React.FC<{ stream: MediaStream; filterCss?: string }> = 
   const paint = useCallback((node: HTMLVideoElement | null) => {
     if (!node || node.srcObject === wantRef.current) return;
     node.srcObject = wantRef.current;
+    node.muted = true;
     if (wantRef.current) void node.play().catch(() => undefined);
   }, []);
 
@@ -40,7 +41,10 @@ const PeerVideoElement: React.FC<{ stream: MediaStream; filterCss?: string }> = 
     if (!stream) return;
     const onLoaded = () => {
       const el = elRef.current;
-      if (el && el.paused) el.play().catch(() => undefined);
+      if (el) {
+        el.muted = true;
+        if (el.paused) el.play().catch(() => undefined);
+      }
     };
     stream.addEventListener('addtrack', onLoaded);
     for (const track of stream.getTracks()) {
