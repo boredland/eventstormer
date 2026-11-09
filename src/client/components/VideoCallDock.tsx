@@ -89,10 +89,26 @@ const VideoBubble: React.FC<VideoBubbleProps> = ({
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    const el = videoRef.current;
+    if (!el || !stream) return;
+    // Only assign srcObject when stream actually changes — re-assigning same stream stops playback
+    if (el.srcObject !== stream) {
+      el.srcObject = stream;
     }
+    if (el.paused) el.play().catch(() => {});
+  }, [stream]);
+
+  // Re-attempt playback when remote tracks are added to the stream
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !stream) return;
+    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    stream.addEventListener('addtrack', onLoaded);
+    el.addEventListener('loadeddata', onLoaded);
+    return () => {
+      stream.removeEventListener('addtrack', onLoaded);
+      el.removeEventListener('loadeddata', onLoaded);
+    };
   }, [stream]);
 
   const initials = name
@@ -303,18 +319,50 @@ export const VideoCallDock: React.FC<VideoCallDockProps> = ({
 
   // Keep video streams connected to video elements
   useEffect(() => {
-    if (screenVideoRef.current && activeFeed && screenVideoRef.current.srcObject !== activeFeed.stream) {
-      screenVideoRef.current.srcObject = activeFeed.stream;
-      screenVideoRef.current.play().catch(() => {});
+    const el = screenVideoRef.current;
+    if (!el || !activeFeed) return;
+    if (el.srcObject !== activeFeed.stream) {
+      el.srcObject = activeFeed.stream;
     }
+    if (el.paused) el.play().catch(() => {});
   }, [activeFeed]);
 
+  // Re-attempt playback when tracks arrive on the active feed
   useEffect(() => {
-    if (fullscreenVideoRef.current && activeFeed && isFullscreen && fullscreenVideoRef.current.srcObject !== activeFeed.stream) {
-      fullscreenVideoRef.current.srcObject = activeFeed.stream;
-      fullscreenVideoRef.current.play().catch(() => {});
+    const el = screenVideoRef.current;
+    const stream = activeFeed?.stream;
+    if (!el || !stream) return;
+    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    stream.addEventListener('addtrack', onLoaded);
+    el.addEventListener('loadeddata', onLoaded);
+    return () => {
+      stream.removeEventListener('addtrack', onLoaded);
+      el.removeEventListener('loadeddata', onLoaded);
+    };
+  }, [activeFeed?.stream]);
+
+  useEffect(() => {
+    const el = fullscreenVideoRef.current;
+    if (!el || !activeFeed || !isFullscreen) return;
+    if (el.srcObject !== activeFeed.stream) {
+      el.srcObject = activeFeed.stream;
     }
+    if (el.paused) el.play().catch(() => {});
   }, [activeFeed, isFullscreen]);
+
+  // Re-attempt playback when tracks arrive
+  useEffect(() => {
+    const el = fullscreenVideoRef.current;
+    const stream = activeFeed?.stream;
+    if (!el || !stream || !isFullscreen) return;
+    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    stream.addEventListener('addtrack', onLoaded);
+    el.addEventListener('loadeddata', onLoaded);
+    return () => {
+      stream.removeEventListener('addtrack', onLoaded);
+      el.removeEventListener('loadeddata', onLoaded);
+    };
+  }, [activeFeed?.stream, isFullscreen]);
 
   if (!isCallActive) return null;
 

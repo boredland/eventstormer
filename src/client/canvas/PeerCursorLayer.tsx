@@ -12,12 +12,32 @@ interface PeerCursorLayerProps {
 
 const PeerVideoElement: React.FC<{ stream: MediaStream; filterCss?: string }> = ({ stream, filterCss }) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const streamIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
+    const el = videoRef.current;
+    if (!el || !stream) return;
+    // Only re-assign srcObject when the stream actually changes — re-assigning the
+    // same stream stops playback and renders a black frame.
+    if (streamIdRef.current !== stream.id) {
+      streamIdRef.current = stream.id;
+      el.srcObject = stream;
     }
+    // Ensure playback starts after srcObject is set or tracks are added
+    if (el.paused) el.play().catch(() => {});
+  }, [stream]);
+
+  // Re-attempt playback when tracks become available
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !stream) return;
+    const onLoaded = () => { if (el.paused) el.play().catch(() => {}); };
+    stream.addEventListener('addtrack', onLoaded);
+    el.addEventListener('loadeddata', onLoaded);
+    return () => {
+      stream.removeEventListener('addtrack', onLoaded);
+      el.removeEventListener('loadeddata', onLoaded);
+    };
   }, [stream]);
 
   return (
