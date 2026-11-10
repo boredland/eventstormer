@@ -24,6 +24,7 @@ export interface UseWebRTCOptions {
   user: UserProfile;
   peers: PeerCursor[];
   sendMessage: (msg: ClientMessage) => void;
+  isConnected: boolean;
 }
 
 export interface UseWebRTCReturn {
@@ -111,6 +112,7 @@ export function useWebRTC({
   user,
   peers,
   sendMessage,
+  isConnected,
 }: UseWebRTCOptions): UseWebRTCReturn {
   const [isCallActive, setIsCallActive] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -156,6 +158,30 @@ export function useWebRTC({
 
   const isCallActiveRef = useRef<boolean>(isCallActive);
   isCallActiveRef.current = isCallActive;
+
+  const isConnectedRef = useRef<boolean>(isConnected);
+  // WebSocket reconnect while in a call: the server treats the new socket as a
+  // fresh workspace join (call presence lost) and has broadcast webrtc:peer-left
+  // for the old one, so remote peers dropped us while our side kept stale
+  // connections (Call (2) on one side, Call (1) on the other, PCs dying
+  // one-sided). Rebuild every peer connection and re-announce the call.
+  useEffect(() => {
+    const reconnected = isConnected && !isConnectedRef.current;
+    isConnectedRef.current = isConnected;
+    if (!reconnected || !isCallActiveRef.current) return;
+    for (const pc of peerConnectionsRef.current.values()) {
+      pc.close();
+    }
+    peerConnectionsRef.current.clear();
+    pendingCandidatesRef.current.clear();
+    mediaStateRef.current.clear();
+    for (const item of remoteAnalysersRef.current.values()) {
+      window.clearInterval(item.intervalId);
+    }
+    remoteAnalysersRef.current.clear();
+    setRemotePeers(new Map());
+    sendMessage({ type: 'webrtc:join', roomId: currentRoomIdRef.current });
+  }, [isConnected, sendMessage]);
 
   // Initialize AudioContext safely
   const getAudioContext = useCallback(() => {

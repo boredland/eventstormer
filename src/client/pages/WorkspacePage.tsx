@@ -132,6 +132,7 @@ export const WorkspacePage: React.FC<WorkspacePageProps> = ({
     user,
     peers,
     sendMessage,
+    isConnected,
   });
 
   webrtcHandlerRef.current = webrtc.handleServerMessage;
